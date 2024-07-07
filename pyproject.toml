@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "torch-submit"
+authors = [
+    {name = "Tony Francis", email = "tony@dream3d.com"},
+]
+description = "A tool for submitting and managing distributed PyTorch jobs"
+readme = "README.md"
+requires-python = ">=3.7"
+keywords = ["pytorch", "distributed", "job submission"]
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "typer",
+    "rich",
+    "pyyaml",
+    "fabric",
+]
+dynamic = ["version"]
+
+[project.scripts]
+torch-submit = "torch_submit.cli:app"
+
+[tool.setuptools_scm]
+write_to = "torch_submit/_version.py"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["torch_submit*"]
+exclude = ["tests*"]
+
+[project.urls]
+"Homepage" = "https://github.com/dream3d-ai/torch-submit"
+"Bug Tracker" = "https://github.com/dream3d-ai/torch-submit/issues"
