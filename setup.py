@@ -2,7 +2,8 @@ from setuptools import find_packages, setup
 
 setup(
     name="torch-submit",
-    version="0.1.0",
+    use_scm_version=True,
+    setup_requires=['setuptools_scm'],
     packages=find_packages(),
     install_requires=[
         "typer",
