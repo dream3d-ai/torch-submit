@@ -6,8 +6,7 @@ Torch Submit is a lightweight, easy-to-use tool for running distributed PyTorch 
 
 - Have access to a bunch of machines with IP addresses
 - Want to run distributed PyTorch jobs without the hassle
-- Don't have the time, energy, or resources to set up complex cluster management systems like SLURM or Kubernetes
-- Find Ray unnecessarily complex for their needs
+- Don't have the time, energy, or patience to set up complex cluster management systems like SLURM or Kubernetes
 
 Under the hood, Torch Submit uses Fabric to copy your working directory to the remote addresses and TorchRun to execute the command.
 
