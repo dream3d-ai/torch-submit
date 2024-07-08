@@ -125,6 +125,7 @@ def list_jobs():
             "started": "bold yellow",
             "running": "bold green",
             "crashed": "bold red",
+            "stopping": "bold orange",
             "stopped": "bold cyan",
         }.get(job.status, "")
 
@@ -157,8 +158,8 @@ def stop_job(job_id: str):
             with Connection(node) as c:
                 c.run(f"pkill -TERM -P {pid}", warn=True)
 
-        job_manager.update_job_status(job_id, "stopped")
-        console.print(f"Job [bold green]{job_id}[/bold green] has been stopped")
+        job_manager.update_job_status(job_id, "stopping")
+        console.print(f"Job [bold green]{job_id}[/bold green] is stopping")
     except Exception as e:
         console.print(f"[bold red]Error stopping job:[/bold red] {str(e)}")
         raise typer.Exit(code=1)

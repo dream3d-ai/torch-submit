@@ -112,7 +112,7 @@ class JobManager:
         if job.status in ["stopped", "crashed"]:
             return job.status
 
-        if job.status in ["submitted", "running", "started"]:
+        if job.status in ["submitted", "running", "started", "stopping"]:
             for node_ip, pid in job.pids.items():
                 try:
                     with Connection(node_ip, connect_timeout=5) as c:
@@ -121,8 +121,10 @@ class JobManager:
                             warn=True,
                             hide=True,
                         )
-                        if result.ok:
+                        if result.ok and job.status == "submitted":
                             return "running"
+                        elif result.ok and job.status == "stopping":
+                            return "stopping"
                 except Exception:
                     # If we can't connect to a node, we'll continue to the next one
                     continue
