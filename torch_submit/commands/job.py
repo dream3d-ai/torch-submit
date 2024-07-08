@@ -132,11 +132,10 @@ def list_jobs():
         table.add_row(
             job.id,
             job.name,
-            job.status,  # Remove the markup tags here
+            f"[{status_style}]{job.status}[/{status_style}]",
             job.cluster,
             str(len(job.nodes)),
         )
-
     console.print(table)
 
 
