@@ -6,16 +6,14 @@ Torch Submit is a lightweight, easy-to-use tool for running distributed PyTorch 
 
 - Have access to a bunch of machines with IP addresses
 - Want to run distributed PyTorch jobs without the hassle
-- Don't have the time, energy, or resources to set up complex cluster management systems like SLURM or Kubernetes
-- Find Ray unnecessarily complex for their needs
+- Don't have the time, energy, or patience to set up complex cluster management systems like SLURM or Kubernetes
 
-If you've ever thought, "I just want to run my PyTorch job on these machines without losing my sanity," then Torch Submit is for you.
+Under the hood, Torch Submit uses Fabric to copy your working directory to the remote addresses and TorchRun to execute the command.
 
 ## Features
 
 - Simple cluster configuration: Just add your machines' IP addresses
 - Easy job submission: Run your PyTorch jobs with a single command
-- Interactive cluster setup: Guided process to set up your compute resources
 - Job management: Submit, stop, restart, and monitor your jobs
 - Log tailing: Easily view the logs of your running jobs
 
@@ -41,7 +39,10 @@ pip install -e . --prefix ~/.local
 
 2. Submit a job:
    ```bash
-   torch-submit job submit --name "my_job" --working-dir ./my_project --cluster my_cluster
+   torch-submit job submit --cluster my_cluster -- <entrypoint>
+   # for example:
+   # torch-submit job submit --cluster my_cluster -- python train.py
+   # torch-submit job submit --cluster my_cluster -- python -m main.train
    ```
 
 3. List running jobs:
@@ -74,14 +75,14 @@ pip install -e . --prefix ~/.local
 
 ### Job Management
 
-- Submit a job: `torch-submit job submit --name <job_name> --working-dir <path> --cluster <cluster_name>`
+- Submit a job: `torch-submit job submit --cluster my_cluster -- <entrypoint>`
 - List jobs: `torch-submit job list`
 - Stop a job: `torch-submit job stop <job_id>`
 - Restart a job: `torch-submit job restart <job_id>`
 
 ### Log Management
 
-- Tail logs: `torch-submit logs tail <job_id>`
+- Tail logs: `torch-submit job logs <job_id>`
 
 ## Configuration
 
