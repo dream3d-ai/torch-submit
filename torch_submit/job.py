@@ -125,6 +125,10 @@ class JobManager:
                             return "running"
                         elif result.ok and job.status == "stopping":
                             return "stopping"
+                        elif not result.ok and job.status == "running":
+                            return "crashed"
+                        elif not result.ok and job.status == "stopping":
+                            return "stopped"
                 except Exception:
                     # If we can't connect to a node, we'll continue to the next one
                     continue
