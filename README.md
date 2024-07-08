@@ -28,7 +28,7 @@ pip install torch-submit
 or from source:
 
 ```bash
-pip install -e .
+pip install -e . --prefix ~/.local
 ```
 
 ## Quick Start
