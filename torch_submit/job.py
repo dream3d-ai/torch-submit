@@ -27,6 +27,7 @@ class JobManager:
     def __init__(
         self, db_path: str = os.path.expanduser("~/.cache/torch-submit/jobs.db")
     ):
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
         self.conn = sqlite3.connect(db_path)
         self.create_table()
         self.migrate_table()
