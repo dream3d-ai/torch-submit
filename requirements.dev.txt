@@ -3,3 +3,4 @@ uv
 twine
 build
 setuptools_scm
+pre-commit
