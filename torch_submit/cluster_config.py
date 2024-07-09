@@ -11,6 +11,16 @@ class Node:
     private_ip: Optional[str]
     num_gpus: int
     nproc: int
+    ssh_user: str
+    ssh_pub_key_path: str
+
+    def __hash__(self):
+        return hash(self.public_ip)
+
+    def __eq__(self, other):
+        if not isinstance(other, Node):
+            return NotImplemented
+        return self.public_ip == other.public_ip
 
 
 @dataclass
@@ -47,6 +57,8 @@ class ClusterConfig:
                     "private_ip": cluster.head_node.private_ip,
                     "num_gpus": cluster.head_node.num_gpus,
                     "nproc": cluster.head_node.nproc,
+                    "ssh_user": cluster.head_node.ssh_user,
+                    "ssh_pub_key_path": cluster.head_node.ssh_pub_key_path,
                 },
                 "worker_nodes": [
                     {
@@ -54,6 +66,8 @@ class ClusterConfig:
                         "private_ip": node.private_ip,
                         "num_gpus": node.num_gpus,
                         "nproc": node.nproc,
+                        "ssh_user": node.ssh_user,
+                        "ssh_pub_key_path": node.ssh_pub_key_path,
                     }
                     for node in cluster.worker_nodes
                 ],

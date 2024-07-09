@@ -4,9 +4,8 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-from fabric import Connection
-
-from .cluster_config import ClusterConfig
+from .cluster_config import ClusterConfig, Node
+from .connection import NodeConnection
 
 
 @dataclass
@@ -15,7 +14,7 @@ class Job:
     name: str
     status: str
     working_dir: str
-    nodes: List[str]
+    nodes: List[Node]
     cluster: str
     command: str
     max_restarts: int = 0
@@ -59,7 +58,12 @@ class JobManager:
                 job.name,
                 job.status,
                 job.working_dir,
-                ",".join(job.nodes),
+                ",".join(
+                    [
+                        f"{node.public_ip}:{node.private_ip}:{node.num_gpus}:{node.nproc}:{node.ssh_user}:{node.ssh_pub_key_path}"
+                        for node in job.nodes
+                    ]
+                ),
                 job.cluster,
                 job.command,
                 job.max_restarts,
@@ -78,13 +82,15 @@ class JobManager:
                 name=row[1],
                 status=row[2],
                 working_dir=row[3],
-                nodes=row[4].split(","),
+                nodes=[Node(*node.split(":")) for node in row[4].split(",")],
                 cluster=row[5],
                 command=row[6] if len(row) > 6 else "",
                 max_restarts=row[7] if len(row) > 7 else 0,
                 num_gpus=row[8] if len(row) > 8 else None,
                 pids=dict(
-                    [pid.split(":") for pid in row[9].split(",")] if len(row) > 9 and row[9] else {}
+                    [pid.split(":") for pid in row[9].split(",")]
+                    if len(row) > 9 and row[9]
+                    else {}
                 ),
             )
         return None
@@ -97,13 +103,15 @@ class JobManager:
                 name=row[1],
                 status=row[2],
                 working_dir=row[3],
-                nodes=row[4].split(","),
+                nodes=[Node(*node.split(":")) for node in row[4].split(",")],
                 cluster=row[5],
                 command=row[6] if len(row) > 6 else "",
                 max_restarts=row[7] if len(row) > 7 else 0,
                 num_gpus=row[8] if len(row) > 8 else None,
                 pids=dict(
-                    [pid.split(":") for pid in row[9].split(",")] if len(row) > 9 and row[9] else {}
+                    [pid.split(":") for pid in row[9].split(",")]
+                    if len(row) > 9 and row[9]
+                    else {}
                 ),
             )
             for row in cursor.fetchall()
@@ -114,9 +122,9 @@ class JobManager:
             return job.status
 
         if job.status in ["submitted", "running", "started", "stopping"]:
-            for node_ip, pid in job.pids.items():
+            for node, pid in job.pids.items():
                 try:
-                    with Connection(node_ip, connect_timeout=5) as c:
+                    with NodeConnection(node, connect_timeout=5) as c:
                         result = c.run(
                             f"ps -p {pid}",
                             warn=True,
@@ -151,11 +159,14 @@ class JobManager:
     def update_job_status(self, job_id: str, status: str):
         self.conn.execute("UPDATE jobs SET status = ? WHERE id = ?", (status, job_id))
         self.conn.commit()
-    
-    def update_job_pids(self, job_id: str, pids: Dict[str, int]):
+
+    def update_job_pids(self, job_id: str, pids: Dict[Node, int]):
         self.conn.execute(
             "UPDATE jobs SET pids = ? WHERE id = ?",
-            (",".join([f"{k}:{v}" for k, v in pids.items()]), job_id),
+            (
+                ",".join([f"{node.public_ip}:{pid}" for node, pid in pids.items()]),
+                job_id,
+            ),
         )
         self.conn.commit()
 

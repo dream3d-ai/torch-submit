@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.table import Table, box
 
 from ..cluster_config import ClusterConfig
+from ..connection import NodeConnection
 from ..executor import RemoteExecutor, WorkingDirectoryArchiver
 from ..job import Job, JobManager
 from ..utils import generate_friendly_name
@@ -69,7 +70,7 @@ def submit(
         name=name,
         status="submitted",
         working_dir=archived_dir,
-        nodes=[node.private_ip or node.public_ip for node in nodes],
+        nodes=nodes,
         cluster=cluster,
         command=" ".join(command),
         max_restarts=max_restarts,
@@ -80,6 +81,12 @@ def submit(
 
     executor = RemoteExecutor(job)
     pids = executor.execute()
+
+    if all(pid is None for pid in pids.values()):
+        job_manager.update_job_status(job_id, "crashed")
+        console.print(f"Job [bold red]{job_id}[/bold red] failed to start")
+        raise typer.Exit(code=1)
+
     job_manager.update_job_pids(job_id, pids)
 
     console.print(f"Job submitted with name: [bold green]{name}[/bold green]")
@@ -93,19 +100,22 @@ def submit(
 
     if tail:
         console.print("Tailing logs...")
-        with Connection(nodes[0].private_ip or nodes[0].public_ip) as c:
+        with NodeConnection(nodes[0]) as c:
             c.run(f"tail -f /tmp/torch_submit_job_{job.id}/output.log")
 
 
 @app.command("logs")
-def print_logs(job_id: str, tail: bool = typer.Option(False, help="Tail the logs"),):
+def print_logs(
+    job_id: str,
+    tail: bool = typer.Option(False, help="Tail the logs"),
+):
     """Tail the logs of a specific job."""
     job_manager = JobManager()
     job = job_manager.get_job(job_id)
     if job:
         console.print(f"Tailing logs for job [bold green]{job_id}[/bold green]")
         console.print("Press [bold red]Ctrl+C[/bold red] to stop")
-        with Connection(job.nodes[0]) as c:
+        with NodeConnection(job.nodes[0]) as c:
             if tail:
                 c.run(f"tail -f /tmp/torch_submit_job_{job.id}/output.log")
             else:
