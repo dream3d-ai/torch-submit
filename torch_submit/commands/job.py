@@ -33,6 +33,7 @@ def submit(
     command: List[str] = typer.Argument(
         ..., help="The command to run, e.g. 'python main.py'"
     ),
+    tail: bool = typer.Option(False, help="Tail the logs after submitting the job"),
 ):
     """Submit a new job to a specified cluster."""
     try:
@@ -90,9 +91,14 @@ def submit(
         f"GPUs per node: [bold magenta]{num_gpus or 'All available'}[/bold magenta]"
     )
 
+    if tail:
+        console.print("Tailing logs...")
+        with Connection(nodes[0].private_ip or nodes[0].public_ip) as c:
+            c.run(f"tail -f /tmp/torch_submit_job_{job.id}/output.log")
+
 
 @app.command("logs")
-def tail_logs(job_id: str):
+def print_logs(job_id: str, tail: bool = typer.Option(False, help="Tail the logs"),):
     """Tail the logs of a specific job."""
     job_manager = JobManager()
     job = job_manager.get_job(job_id)
@@ -100,7 +106,11 @@ def tail_logs(job_id: str):
         console.print(f"Tailing logs for job [bold green]{job_id}[/bold green]")
         console.print("Press [bold red]Ctrl+C[/bold red] to stop")
         with Connection(job.nodes[0]) as c:
-            c.run(f"tail -f /tmp/torch_submit_job_{job.id}/output.log")
+            if tail:
+                c.run(f"tail -f /tmp/torch_submit_job_{job.id}/output.log")
+            else:
+                result = c.run(f"cat /tmp/torch_submit_job_{job.id}/output.log")
+                console.print(result.stdout)
     else:
         console.print(
             f"Job with ID [bold red]{job_id}[/bold red] not found", style="bold red"
