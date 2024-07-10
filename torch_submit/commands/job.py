@@ -55,11 +55,10 @@ def submit(
     working_dir = os.path.abspath(working_dir)
 
     job_id = str(uuid.uuid4())
-    console.print("Archiving working directory...")
-    archiver = WorkingDirectoryArchiver()
-    output_dir = os.path.expanduser(f"~/.cache/torch-submit/jobs/{job_id}")
-    os.makedirs(output_dir, exist_ok=True)
-    archived_dir = archiver.archive(working_dir, output_dir=output_dir)
+    archiver = WorkingDirectoryArchiver(job_id=job_id, job_name=name)
+
+    console.print("Archiving working directory...")    
+    archived_dir = archiver.archive(working_dir)
     console.print(
         f"Working directory archived to: [bold green]{archived_dir}[/bold green]"
     )

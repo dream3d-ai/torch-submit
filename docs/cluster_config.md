@@ -20,7 +20,7 @@
 
 ## Cluster
 
-[Show source in cluster_config.py:17](../torch_submit/cluster_config.py#L17)
+[Show source in cluster_config.py:27](../torch_submit/cluster_config.py#L27)
 
 #### Signature
 
@@ -32,7 +32,7 @@ class Cluster: ...
 
 ## ClusterConfig
 
-[Show source in cluster_config.py:22](../torch_submit/cluster_config.py#L22)
+[Show source in cluster_config.py:32](../torch_submit/cluster_config.py#L32)
 
 #### Signature
 
@@ -43,7 +43,7 @@ class ClusterConfig:
 
 ### ClusterConfig().add_cluster
 
-[Show source in cluster_config.py:64](../torch_submit/cluster_config.py#L64)
+[Show source in cluster_config.py:78](../torch_submit/cluster_config.py#L78)
 
 #### Signature
 
@@ -57,7 +57,7 @@ def add_cluster(self, name: str, head_node: Node, worker_nodes: List[Node]): ...
 
 ### ClusterConfig().add_worker_node
 
-[Show source in cluster_config.py:81](../torch_submit/cluster_config.py#L81)
+[Show source in cluster_config.py:95](../torch_submit/cluster_config.py#L95)
 
 #### Signature
 
@@ -71,7 +71,7 @@ def add_worker_node(self, cluster_name: str, worker_node: Node): ...
 
 ### ClusterConfig().get_cluster
 
-[Show source in cluster_config.py:73](../torch_submit/cluster_config.py#L73)
+[Show source in cluster_config.py:87](../torch_submit/cluster_config.py#L87)
 
 #### Signature
 
@@ -85,7 +85,7 @@ def get_cluster(self, cluster_name: str) -> Cluster: ...
 
 ### ClusterConfig().list_clusters
 
-[Show source in cluster_config.py:78](../torch_submit/cluster_config.py#L78)
+[Show source in cluster_config.py:92](../torch_submit/cluster_config.py#L92)
 
 #### Signature
 
@@ -95,7 +95,7 @@ def list_clusters(self) -> List[str]: ...
 
 ### ClusterConfig().load_config
 
-[Show source in cluster_config.py:28](../torch_submit/cluster_config.py#L28)
+[Show source in cluster_config.py:38](../torch_submit/cluster_config.py#L38)
 
 #### Signature
 
@@ -105,7 +105,7 @@ def load_config(self): ...
 
 ### ClusterConfig().remove_cluster
 
-[Show source in cluster_config.py:68](../torch_submit/cluster_config.py#L68)
+[Show source in cluster_config.py:82](../torch_submit/cluster_config.py#L82)
 
 #### Signature
 
@@ -115,7 +115,7 @@ def remove_cluster(self, name: str): ...
 
 ### ClusterConfig().remove_worker_node
 
-[Show source in cluster_config.py:87](../torch_submit/cluster_config.py#L87)
+[Show source in cluster_config.py:101](../torch_submit/cluster_config.py#L101)
 
 #### Signature
 
@@ -125,7 +125,7 @@ def remove_worker_node(self, cluster_name: str, worker_node_ip: str): ...
 
 ### ClusterConfig().save_config
 
-[Show source in cluster_config.py:40](../torch_submit/cluster_config.py#L40)
+[Show source in cluster_config.py:50](../torch_submit/cluster_config.py#L50)
 
 #### Signature
 
@@ -135,7 +135,7 @@ def save_config(self): ...
 
 ### ClusterConfig().update_cluster
 
-[Show source in cluster_config.py:97](../torch_submit/cluster_config.py#L97)
+[Show source in cluster_config.py:111](../torch_submit/cluster_config.py#L111)
 
 #### Signature
 

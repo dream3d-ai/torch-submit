@@ -12,11 +12,11 @@
     - [RemoteExecutor().cleanup](#remoteexecutor()cleanup)
     - [RemoteExecutor().execute](#remoteexecutor()execute)
   - [WorkingDirectoryArchiver](#workingdirectoryarchiver)
-    - [WorkingDirectoryArchiver.archive](#workingdirectoryarchiverarchive)
+    - [WorkingDirectoryArchiver().archive](#workingdirectoryarchiver()archive)
 
 ## JobExecutionManager
 
-[Show source in executor.py:123](../torch_submit/executor.py#L123)
+[Show source in executor.py:169](../torch_submit/executor.py#L169)
 
 #### Signature
 
@@ -26,7 +26,7 @@ class JobExecutionManager: ...
 
 ### JobExecutionManager.cancel_job
 
-[Show source in executor.py:138](../torch_submit/executor.py#L138)
+[Show source in executor.py:184](../torch_submit/executor.py#L184)
 
 #### Signature
 
@@ -41,7 +41,7 @@ def cancel_job(job: Job): ...
 
 ### JobExecutionManager.submit_job
 
-[Show source in executor.py:124](../torch_submit/executor.py#L124)
+[Show source in executor.py:170](../torch_submit/executor.py#L170)
 
 #### Signature
 
@@ -58,7 +58,7 @@ def submit_job(job: Job): ...
 
 ## RemoteExecutor
 
-[Show source in executor.py:33](../torch_submit/executor.py#L33)
+[Show source in executor.py:72](../torch_submit/executor.py#L72)
 
 #### Signature
 
@@ -73,7 +73,7 @@ class RemoteExecutor:
 
 ### RemoteExecutor().cleanup
 
-[Show source in executor.py:112](../torch_submit/executor.py#L112)
+[Show source in executor.py:158](../torch_submit/executor.py#L158)
 
 #### Signature
 
@@ -83,33 +83,37 @@ def cleanup(self): ...
 
 ### RemoteExecutor().execute
 
-[Show source in executor.py:39](../torch_submit/executor.py#L39)
+[Show source in executor.py:78](../torch_submit/executor.py#L78)
 
 #### Signature
 
 ```python
-def execute(self): ...
+def execute(self) -> Dict[Node, int]: ...
 ```
+
+#### See also
+
+- [Node](./cluster_config.md#node)
 
 
 
 ## WorkingDirectoryArchiver
 
-[Show source in executor.py:15](../torch_submit/executor.py#L15)
+[Show source in executor.py:19](../torch_submit/executor.py#L19)
 
 #### Signature
 
 ```python
-class WorkingDirectoryArchiver: ...
+class WorkingDirectoryArchiver:
+    def __init__(self, job_id: str, job_name: str): ...
 ```
 
-### WorkingDirectoryArchiver.archive
+### WorkingDirectoryArchiver().archive
 
-[Show source in executor.py:16](../torch_submit/executor.py#L16)
+[Show source in executor.py:27](../torch_submit/executor.py#L27)
 
 #### Signature
 
 ```python
-@staticmethod
-def archive(working_dir: str, output_dir: str) -> str: ...
+def archive(self, working_dir: str) -> str: ...
 ```

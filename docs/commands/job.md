@@ -13,7 +13,7 @@
 
 ## list_jobs
 
-[Show source in job.py:120](../../torch_submit/commands/job.py#L120)
+[Show source in job.py:129](../../torch_submit/commands/job.py#L129)
 
 List all submitted jobs.
 
@@ -28,7 +28,7 @@ def list_jobs(): ...
 
 ## print_logs
 
-[Show source in job.py:100](../../torch_submit/commands/job.py#L100)
+[Show source in job.py:106](../../torch_submit/commands/job.py#L106)
 
 Tail the logs of a specific job.
 
@@ -43,7 +43,7 @@ def print_logs(job_id: str, tail: bool = typer.Option(False, help="Tail the logs
 
 ## restart_job
 
-[Show source in job.py:177](../../torch_submit/commands/job.py#L177)
+[Show source in job.py:186](../../torch_submit/commands/job.py#L186)
 
 Restart a stopped job.
 
@@ -58,7 +58,7 @@ def restart_job(job_id: str): ...
 
 ## stop_job
 
-[Show source in job.py:152](../../torch_submit/commands/job.py#L152)
+[Show source in job.py:161](../../torch_submit/commands/job.py#L161)
 
 Stop a running job.
 
@@ -73,7 +73,7 @@ def stop_job(job_id: str): ...
 
 ## submit
 
-[Show source in job.py:21](../../torch_submit/commands/job.py#L21)
+[Show source in job.py:22](../../torch_submit/commands/job.py#L22)
 
 Submit a new job to a specified cluster.
 

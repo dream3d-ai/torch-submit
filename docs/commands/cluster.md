@@ -26,7 +26,7 @@ def create_cluster(): ...
 
 ## list_clusters
 
-[Show source in cluster.py:50](../../torch_submit/commands/cluster.py#L50)
+[Show source in cluster.py:72](../../torch_submit/commands/cluster.py#L72)
 
 List all available clusters.
 
@@ -41,7 +41,7 @@ def list_clusters(): ...
 
 ## remove_cluster
 
-[Show source in cluster.py:81](../../torch_submit/commands/cluster.py#L81)
+[Show source in cluster.py:103](../../torch_submit/commands/cluster.py#L103)
 
 Remove a cluster configuration.
 

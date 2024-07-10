@@ -10,6 +10,7 @@ A full list of `Torch-submit` project modules.
 - [Commands](commands/index.md#commands)
     - [Cluster](commands/cluster.md#cluster)
     - [Job](commands/job.md#job)
+- [Connection](./connection.md#connection)
 - [Executor](./executor.md#executor)
 - [Job](./job.md#job)
 - [Utils](./utils.md#utils)

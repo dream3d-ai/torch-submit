@@ -22,7 +22,7 @@
 
 ## Job
 
-[Show source in job.py:13](../torch_submit/job.py#L13)
+[Show source in job.py:12](../torch_submit/job.py#L12)
 
 #### Signature
 
@@ -34,7 +34,7 @@ class Job: ...
 
 ## JobManager
 
-[Show source in job.py:26](../torch_submit/job.py#L26)
+[Show source in job.py:25](../torch_submit/job.py#L25)
 
 #### Signature
 
@@ -47,7 +47,7 @@ class JobManager:
 
 ### JobManager().add_job
 
-[Show source in job.py:51](../torch_submit/job.py#L51)
+[Show source in job.py:50](../torch_submit/job.py#L50)
 
 #### Signature
 
@@ -61,7 +61,7 @@ def add_job(self, job: Job): ...
 
 ### JobManager().check_job_status
 
-[Show source in job.py:112](../torch_submit/job.py#L112)
+[Show source in job.py:120](../torch_submit/job.py#L120)
 
 #### Signature
 
@@ -76,7 +76,7 @@ def check_job_status(self, job: Job, cluster_config: ClusterConfig) -> str: ...
 
 ### JobManager().close
 
-[Show source in job.py:166](../torch_submit/job.py#L166)
+[Show source in job.py:177](../torch_submit/job.py#L177)
 
 #### Signature
 
@@ -86,7 +86,7 @@ def close(self): ...
 
 ### JobManager().create_table
 
-[Show source in job.py:35](../torch_submit/job.py#L35)
+[Show source in job.py:34](../torch_submit/job.py#L34)
 
 #### Signature
 
@@ -96,7 +96,7 @@ def create_table(self): ...
 
 ### JobManager().delete_job
 
-[Show source in job.py:162](../torch_submit/job.py#L162)
+[Show source in job.py:173](../torch_submit/job.py#L173)
 
 #### Signature
 
@@ -106,7 +106,7 @@ def delete_job(self, job_id: str): ...
 
 ### JobManager().get_all_jobs_with_status
 
-[Show source in job.py:142](../torch_submit/job.py#L142)
+[Show source in job.py:150](../torch_submit/job.py#L150)
 
 #### Signature
 
@@ -121,7 +121,7 @@ def get_all_jobs_with_status(self, cluster_config: ClusterConfig) -> List[Job]: 
 
 ### JobManager().get_job
 
-[Show source in job.py:72](../torch_submit/job.py#L72)
+[Show source in job.py:76](../torch_submit/job.py#L76)
 
 #### Signature
 
@@ -135,7 +135,7 @@ def get_job(self, job_id: str) -> Optional[Job]: ...
 
 ### JobManager().list_jobs
 
-[Show source in job.py:92](../torch_submit/job.py#L92)
+[Show source in job.py:98](../torch_submit/job.py#L98)
 
 #### Signature
 
@@ -149,7 +149,7 @@ def list_jobs(self) -> List[Job]: ...
 
 ### JobManager().migrate_table
 
-[Show source in job.py:169](../torch_submit/job.py#L169)
+[Show source in job.py:180](../torch_submit/job.py#L180)
 
 #### Signature
 
@@ -159,17 +159,21 @@ def migrate_table(self): ...
 
 ### JobManager().update_job_pids
 
-[Show source in job.py:155](../torch_submit/job.py#L155)
+[Show source in job.py:163](../torch_submit/job.py#L163)
 
 #### Signature
 
 ```python
-def update_job_pids(self, job_id: str, pids: Dict[str, int]): ...
+def update_job_pids(self, job_id: str, pids: Dict[Node, int]): ...
 ```
+
+#### See also
+
+- [Node](./cluster_config.md#node)
 
 ### JobManager().update_job_status
 
-[Show source in job.py:151](../torch_submit/job.py#L151)
+[Show source in job.py:159](../torch_submit/job.py#L159)
 
 #### Signature
 
@@ -181,7 +185,7 @@ def update_job_status(self, job_id: str, status: str): ...
 
 ## create_job
 
-[Show source in job.py:174](../torch_submit/job.py#L174)
+[Show source in job.py:185](../torch_submit/job.py#L185)
 
 #### Signature
 

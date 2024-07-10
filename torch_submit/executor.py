@@ -1,4 +1,5 @@
 import fnmatch
+import json
 import os
 import random
 import zipfile
@@ -16,10 +17,16 @@ console = Console()
 
 
 class WorkingDirectoryArchiver:
-    @staticmethod
-    def archive(working_dir: str, output_dir: str) -> str:
+    def __init__(self, job_id: str, job_name: str):
+        self.job_id = job_id
+        self.job_name = job_name
+
+        self.output_dir = os.path.expanduser(f"~/.cache/torch-submit/jobs/{job_id}")
+        os.makedirs(self.output_dir, exist_ok=True)
+
+    def archive(self, working_dir: str) -> str:
         archive_name = f"{os.path.basename(working_dir)}.zip"
-        archive_path = os.path.join(output_dir, archive_name)
+        archive_path = os.path.join(self.output_dir, archive_name)
 
         gitignore_path = os.path.join(working_dir, ".gitignore")
         ignore_patterns = []
@@ -39,6 +46,14 @@ class WorkingDirectoryArchiver:
             )
 
         with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            # Write job metadata under .torch/job.json
+            job_metadata = {
+                "id": self.job_id,
+                "name": self.job_name,
+            }
+            zipf.writestr(".torch_submit/job.json", json.dumps(job_metadata))
+
+            # Archive files
             for root, dirs, files in os.walk(working_dir):
                 dirs[:] = [
                     d
