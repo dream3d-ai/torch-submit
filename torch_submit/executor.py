@@ -88,11 +88,11 @@ class RemoteExecutor:
             nproc_per_node = 1  # Default to 1 if no GPU information is available
 
         if len(cluster.worker_nodes) == 0:
-            rdzv_endpoint = "localhost:0"
+            port = random.randint(29400, 29499)
+            rdzv_endpoint = f"localhost:{port}"
         else:
             head_node = cluster.head_node
             ip = head_node.private_ip or head_node.public_ip
-            port = random.randint(29400, 29499)
             rdzv_endpoint = f"{ip}:{port}"
 
         torchrun_command = (
