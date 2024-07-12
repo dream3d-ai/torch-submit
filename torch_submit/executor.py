@@ -113,8 +113,7 @@ class RemoteExecutor:
                     self._setup_remote_env(conn)
                     if i == 0:  # Head node
                         self._copy_working_dir(conn)
-                    pid = self._run_job(conn, torchrun_command, i)
-                    pids[node] = pid
+                    pids[node] = self._run_job(conn, torchrun_command, i)
             except Exception:
                 console.print_exception()
                 console.print(f"Error executing job on node {node.public_ip}")

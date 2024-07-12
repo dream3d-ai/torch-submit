@@ -4,7 +4,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-from .cluster_config import ClusterConfig, Node
+from .cluster_config import Node
 from .connection import NodeConnection
 
 
@@ -117,7 +117,7 @@ class JobManager:
             for row in cursor.fetchall()
         ]
 
-    def check_job_status(self, job: Job, cluster_config: ClusterConfig) -> str:
+    def check_job_status(self, job: Job) -> str:
         if job.status in ["stopped", "crashed"]:
             return job.status
 
@@ -147,10 +147,10 @@ class JobManager:
 
         return job.status  # Return the current status if it's not one we're updating
 
-    def get_all_jobs_with_status(self, cluster_config: ClusterConfig) -> List[Job]:
+    def get_all_jobs_with_status(self) -> List[Job]:
         jobs = self.list_jobs()
         for job in jobs:
-            new_status = self.check_job_status(job, cluster_config)
+            new_status = self.check_job_status(job)
             if new_status != job.status:
                 self.update_job_status(job.id, new_status)
                 job.status = new_status

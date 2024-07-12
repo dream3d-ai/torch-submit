@@ -86,6 +86,7 @@ def submit(
         console.print(f"Job [bold red]{job_id}[/bold red] failed to start")
         raise typer.Exit(code=1)
 
+    job_manager.update_job_status(job_id, "started")
     job_manager.update_job_pids(job_id, pids)
 
     console.print(f"Job submitted with name: [bold green]{name}[/bold green]")
@@ -130,7 +131,7 @@ def print_logs(
 def list_jobs():
     """List all submitted jobs."""
     job_manager = JobManager()
-    jobs = job_manager.get_all_jobs_with_status(cluster_config)
+    jobs = job_manager.get_all_jobs_with_status()
 
     table = Table(title="Job List", box=box.ROUNDED)
     table.add_column("ID", style="cyan", no_wrap=True)
