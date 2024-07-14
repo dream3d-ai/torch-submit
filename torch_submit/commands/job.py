@@ -9,7 +9,7 @@ from rich.table import Table, box
 
 from ..cluster_config import ClusterConfig
 from ..connection import NodeConnection
-from ..executor import RemoteExecutor, WorkingDirectoryArchiver
+from ..executor import Executor, TorchrunExecutor, WorkingDirectoryArchiver
 from ..job import Job, JobManager
 from ..utils import generate_friendly_name
 
@@ -35,6 +35,7 @@ def submit(
         ..., help="The command to run, e.g. 'python main.py'"
     ),
     tail: bool = typer.Option(False, help="Tail the logs after submitting the job"),
+    executor: Executor = typer.Option(TorchrunExecutor, help="Executor to use")
 ):
     """Submit a new job to a specified cluster."""
     try:
@@ -78,8 +79,8 @@ def submit(
     console.print("Submitting job...")
     job_manager.add_job(job)
 
-    executor = RemoteExecutor(job)
-    pids = executor.execute()
+    job_executor = executor.to_executor(job)
+    pids = job_executor.execute()
 
     if all(pid is None for pid in pids.values()):
         job_manager.update_job_status(job_id, "crashed")
@@ -219,7 +220,7 @@ def restart_job(job_id: str):
                     raise typer.Exit(code=1)
 
         # If not running, restart the job
-        executor = RemoteExecutor(job)
+        executor = TorchrunExecutor(job)
         pids = executor.execute()
 
         job_manager.update_job_status(job_id, "running")

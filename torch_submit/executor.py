@@ -3,6 +3,8 @@ import json
 import os
 import random
 import zipfile
+from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Dict
 
 from fabric import Connection
@@ -69,52 +71,26 @@ class WorkingDirectoryArchiver:
         return archive_path
 
 
-class RemoteExecutor:
+class BaseExecutor(ABC):
     def __init__(self, job: Job):
         self.job = job
         self.remote_dir = f"/tmp/torch_submit_job_{self.job.id}"
         self.cluster_config = ClusterConfig()
 
+    @abstractmethod
+    def get_command(self, rank: int): ...
+
     def execute(self) -> Dict[Node, int]:
         cluster = self.cluster_config.get_cluster(self.job.cluster)
-        nnodes = len(cluster.worker_nodes) + 1  # including head node
-
-        # Determine nproc_per_node
-        if self.job.num_gpus is not None:
-            nproc_per_node = self.job.num_gpus
-        elif cluster.head_node.num_gpus is not None:
-            nproc_per_node = cluster.head_node.num_gpus
-        else:
-            nproc_per_node = 1  # Default to 1 if no GPU information is available
-
-        if len(cluster.worker_nodes) == 0:
-            
-            rdzv_endpoint = "localhost"
-        else:
-            head_node = cluster.head_node
-            ip = head_node.private_ip or head_node.public_ip
-            port = random.randint(29400, 29499)
-            rdzv_endpoint = f"{ip}:{port}"
-
-        torchrun_command = (
-            f"torchrun "
-            f"--nnodes={nnodes} "
-            f"--nproc-per-node={nproc_per_node} "
-            f"--rdzv-backend=c10d "
-            f"--rdzv-endpoint={rdzv_endpoint} "
-            f"--rdzv-id={self.job.id} "
-            f"--max-restarts={self.job.max_restarts} "
-            "--no-python"
-        )
 
         pids = {}
         for i, node in enumerate([cluster.head_node] + cluster.worker_nodes):
             try:
                 with NodeConnection(node) as conn:
                     self._setup_remote_env(conn)
-                    if i == 0:  # Head node
-                        self._copy_working_dir(conn)
-                    pids[node] = self._run_job(conn, torchrun_command, i)
+                    self._copy_working_dir(conn)
+                    command = self.get_command(i)
+                    pids[node] = self._run_job(conn, command, i)
             except Exception:
                 console.print_exception()
                 console.print(f"Error executing job on node {node.public_ip}")
@@ -166,10 +142,83 @@ class RemoteExecutor:
                 )
 
 
+class DistributedExecutor(BaseExecutor):
+    def __init__(self, job: Job):
+        self.job = job
+        self.remote_dir = f"/tmp/torch_submit_job_{self.job.id}"
+        self.cluster_config = ClusterConfig()
+
+    def get_command(self, rank: int):
+        cluster = self.cluster_config.get_cluster(self.job.cluster)
+        nnodes = len(cluster.worker_nodes) + 1  # including head node
+
+        head_node = cluster.head_node
+        ip = head_node.private_ip or head_node.public_ip
+        port = random.randint(29400, 29499)
+
+        return (
+            f"MASTER_ADDR={ip} "
+            f"MASTER_PORT={port} "
+            f"WORLD_SIZE={nnodes} "
+            f"NODE_RANK={rank} "
+        )
+
+
+class TorchrunExecutor(BaseExecutor):
+    def __init__(self, job: Job):
+        self.job = job
+        self.remote_dir = f"/tmp/torch_submit_job_{self.job.id}"
+        self.cluster_config = ClusterConfig()
+
+    def get_command(self, rank: int):
+        cluster = self.cluster_config.get_cluster(self.job.cluster)
+        nnodes = len(cluster.worker_nodes) + 1  # including head node
+
+        # Determine nproc_per_node
+        if self.job.num_gpus is not None:
+            nproc_per_node = self.job.num_gpus
+        elif cluster.head_node.num_gpus is not None:
+            nproc_per_node = cluster.head_node.num_gpus
+        else:
+            nproc_per_node = 1  # Default to 1 if no GPU information is available
+
+        if len(cluster.worker_nodes) == 0:
+            rdzv_endpoint = "localhost"
+        else:
+            head_node = cluster.head_node
+            ip = head_node.private_ip or head_node.public_ip
+            port = random.randint(29400, 29499)
+            rdzv_endpoint = f"{ip}:{port}"
+
+        return (
+            f"torchrun "
+            f"--nnodes={nnodes} "
+            f"--nproc-per-node={nproc_per_node} "
+            f"--rdzv-backend=c10d "
+            f"--rdzv-endpoint={rdzv_endpoint} "
+            f"--rdzv-id={self.job.id} "
+            f"--max-restarts={self.job.max_restarts} "
+            "--no-python"
+        )
+
+
+class Executor(str, Enum):
+    TORCHRUN = "torchrun"
+    DISTRIBUTED = "distributed"
+
+    def to_executor(self) -> BaseExecutor:
+        if self == Executor.TORCHRUN:
+            return TorchrunExecutor
+        elif self == Executor.DISTRIBUTED:
+            return DistributedExecutor
+        else:
+            raise ValueError(f"Unknown executor: {self}")
+
+
 class JobExecutionManager:
     @staticmethod
-    def submit_job(job: Job):
-        executor = RemoteExecutor(job)
+    def submit_job(job: Job, executor: Executor):
+        executor = Executor.to_executor(job)
         try:
             executor.execute()
             console.print(
@@ -183,7 +232,7 @@ class JobExecutionManager:
 
     @staticmethod
     def cancel_job(job: Job):
-        executor = RemoteExecutor(job)
+        executor = TorchrunExecutor(job)
         try:
             executor.cleanup()
             console.print(
