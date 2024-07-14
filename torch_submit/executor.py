@@ -122,18 +122,17 @@ class BaseExecutor(ABC):
                 with NodeConnection(node) as conn:
                     self._setup_remote_env(conn)
                     self._copy_working_dir(conn)
-                    command = self.get_command(rank)
-                    pids[node] = self._run_job(conn, command, rank)
+                    pids[node] = self._run_job(conn, rank)
             except Exception:
                 console.print_exception()
                 console.print(f"Error executing job on node {node.public_ip}")
                 pids[node] = None
         return pids
     
-    def _prepare_command(self):
-        (
+    def _prepare_command(self, rank: int):
+        return (
             f"cd {self.remote_dir} && "
-            f"nohup {self.get_command()} "
+            f"nohup {self.get_command(rank)} "
             f"{self.job.command}"
         )
 
@@ -155,9 +154,13 @@ class BaseExecutor(ABC):
         console.print(
             f"[bold blue]Running job on {conn.host} (rank {node_rank})...[/bold blue]"
         )
-        full_command = self._prepare_command()
-        result = conn.run(
-            f"{full_command} > {self.remote_dir}/output.log 2>&1; echo $? > {self.remote_dir}/exit_code.log & echo $! > {self.remote_dir}/job.pid",
+        full_command = self._prepare_command(node_rank)
+        conn.run(
+            f"{full_command} > {self.remote_dir}/output.log 2>&1 & "
+            f"pid=$!; "
+            f"echo $pid > {self.remote_dir}/job.pid; "
+            f"wait $pid; "
+            f"echo $? > {self.remote_dir}/exit_code",
             disown=True,
         )
         # Parse the PID from the job.pid file
@@ -398,8 +401,8 @@ class DockerDistributedExecutor(DistributedExecutor):
             f"-e NODE_RANK={rank} "
         )
 
-    def _prepare_command(self):
-        return f"{self.get_command()} -- {self.job.command}"
+    def _prepare_command(self, rank: int):
+        return f"{self.get_command(rank)} -- {self.job.command}"
 
 
 class Executor(str, Enum):
@@ -407,19 +410,19 @@ class Executor(str, Enum):
     DISTRIBUTED = "distributed"
     OPTUNA = "optuna"
 
-    def to_executor(self, use_docker: bool = False) -> BaseExecutor:
+    def to_executor(self, job: Job, use_docker: bool = False) -> BaseExecutor:
         if self == Executor.TORCHRUN and use_docker:
             raise ValueError("Docker is not supported for torchrun")
         elif self == Executor.TORCHRUN:
-            return TorchrunExecutor
+            return TorchrunExecutor(job)
         elif self == Executor.DISTRIBUTED and use_docker:
-            return DockerDistributedExecutor
+            return DockerDistributedExecutor(job)
         elif self == Executor.DISTRIBUTED:
-            return DistributedExecutor
+            return DistributedExecutor(job)
         elif self == Executor.OPTUNA and use_docker:
             return ValueError("Docker is not supported for optuna")
         elif self == Executor.OPTUNA:
-            return OptunaExecutor
+            return OptunaExecutor(job)
         else:
             raise ValueError(f"Unknown executor: {self}")
 
