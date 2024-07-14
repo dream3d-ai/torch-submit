@@ -11,8 +11,30 @@ class Node:
     private_ip: Optional[str]
     num_gpus: int
     nproc: int
-    ssh_user: str
-    ssh_pub_key_path: str
+    ssh_user: Optional[str]
+    ssh_pub_key_path: Optional[str]
+
+    def __post_init__(self):
+        self.private_ip = self.private_ip or None
+        self.ssh_user = self.ssh_user or None
+        self.ssh_pub_key_path = self.ssh_pub_key_path or None
+
+    @classmethod
+    def from_db(cls, row: str):
+        public_ip, private_ip, num_gpus, nproc, ssh_user, ssh_pub_key_path = row.split(
+            ":"
+        )
+        return cls(
+            public_ip,
+            private_ip if private_ip != "None" else None,
+            int(num_gpus),
+            int(nproc),
+            ssh_user if ssh_user != "None" else None,
+            ssh_pub_key_path if ssh_pub_key_path != "None" else None,
+        )
+
+    def to_db(self):
+        return f"{self.public_ip}:{self.private_ip or 'None'}:{self.num_gpus}:{self.nproc}:{self.ssh_user or 'None'}:{self.ssh_pub_key_path or 'None'}"
 
     def __hash__(self):
         return hash(self.public_ip)
@@ -54,20 +76,20 @@ class ClusterConfig:
             config["clusters"][cluster_name] = {
                 "head_node": {
                     "public_ip": cluster.head_node.public_ip,
-                    "private_ip": cluster.head_node.private_ip,
+                    "private_ip": cluster.head_node.private_ip or None,
                     "num_gpus": cluster.head_node.num_gpus,
                     "nproc": cluster.head_node.nproc,
-                    "ssh_user": cluster.head_node.ssh_user,
-                    "ssh_pub_key_path": cluster.head_node.ssh_pub_key_path,
+                    "ssh_user": cluster.head_node.ssh_user or None,
+                    "ssh_pub_key_path": cluster.head_node.ssh_pub_key_path or None,
                 },
                 "worker_nodes": [
                     {
                         "public_ip": node.public_ip,
-                        "private_ip": node.private_ip,
+                        "private_ip": node.private_ip or None,
                         "num_gpus": node.num_gpus,
                         "nproc": node.nproc,
-                        "ssh_user": node.ssh_user,
-                        "ssh_pub_key_path": node.ssh_pub_key_path,
+                        "ssh_user": node.ssh_user or None,
+                        "ssh_pub_key_path": node.ssh_pub_key_path or None,
                     }
                     for node in cluster.worker_nodes
                 ],

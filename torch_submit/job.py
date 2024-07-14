@@ -21,6 +21,32 @@ class Job:
     num_gpus: Optional[int] = None
     pids: Dict[str, int] = field(default_factory=dict)
 
+    @classmethod
+    def from_db(cls, row: Tuple) -> "Job":
+        return cls(
+            id=row[0],
+            name=row[1],
+            status=row[2],
+            working_dir=row[3],
+            nodes=[Node.from_db(node) for node in row[4].split(",")],
+            cluster=row[5],
+            command=row[6],
+        )
+
+    def to_db(self) -> Tuple:
+        return (
+            self.id,
+            self.name,
+            self.status,
+            self.working_dir,
+            ",".join([node.to_db() for node in self.nodes]),
+            self.cluster,
+            self.command,
+            self.max_restarts,
+            self.num_gpus,
+            ",".join([f"{k}:{v}" for k, v in self.pids.items()]),
+        )
+
 
 class JobManager:
     def __init__(
@@ -53,69 +79,20 @@ class JobManager:
             INSERT INTO jobs (id, name, status, working_dir, nodes, cluster, command, max_restarts, num_gpus, pids)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-            (
-                job.id,
-                job.name,
-                job.status,
-                job.working_dir,
-                ",".join(
-                    [
-                        f"{node.public_ip}:{node.private_ip}:{node.num_gpus}:{node.nproc}:{node.ssh_user}:{node.ssh_pub_key_path}"
-                        for node in job.nodes
-                    ]
-                ),
-                job.cluster,
-                job.command,
-                job.max_restarts,
-                job.num_gpus,
-                ",".join([f"{k}:{v}" for k, v in job.pids.items()]),
-            ),
+            job.to_db(),
         )
         self.conn.commit()
 
     def get_job(self, job_id: str) -> Optional[Job]:
         cursor = self.conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,))
         row = cursor.fetchone()
-        if row:
-            return Job(
-                id=row[0],
-                name=row[1],
-                status=row[2],
-                working_dir=row[3],
-                nodes=[Node(*node.split(":")) for node in row[4].split(",")],
-                cluster=row[5],
-                command=row[6] if len(row) > 6 else "",
-                max_restarts=row[7] if len(row) > 7 else 0,
-                num_gpus=row[8] if len(row) > 8 else None,
-                pids=dict(
-                    [pid.split(":") for pid in row[9].split(",")]
-                    if len(row) > 9 and row[9]
-                    else {}
-                ),
-            )
-        return None
+        if not row:
+            return None
+        return Job.from_db(row)
 
     def list_jobs(self) -> List[Job]:
         cursor = self.conn.execute("SELECT * FROM jobs")
-        return [
-            Job(
-                id=row[0],
-                name=row[1],
-                status=row[2],
-                working_dir=row[3],
-                nodes=[Node(*node.split(":")) for node in row[4].split(",")],
-                cluster=row[5],
-                command=row[6] if len(row) > 6 else "",
-                max_restarts=row[7] if len(row) > 7 else 0,
-                num_gpus=row[8] if len(row) > 8 else None,
-                pids=dict(
-                    [pid.split(":") for pid in row[9].split(",")]
-                    if len(row) > 9 and row[9]
-                    else {}
-                ),
-            )
-            for row in cursor.fetchall()
-        ]
+        return [Job.from_db(row) for row in cursor.fetchall()]
 
     def check_job_status(self, job: Job) -> str:
         if job.status in ["stopped", "crashed"]:
@@ -149,11 +126,16 @@ class JobManager:
 
     def get_all_jobs_with_status(self) -> List[Job]:
         jobs = self.list_jobs()
-        for job in jobs:
-            new_status = self.check_job_status(job)
-            if new_status != job.status:
-                self.update_job_status(job.id, new_status)
-                job.status = new_status
+        with ThreadPoolExecutor() as executor:
+            futures = [executor.submit(self.check_job_status, job) for job in jobs]
+            for job, future in zip(jobs, futures):
+                try:
+                    new_status = future.result()
+                    if new_status != job.status:
+                        self.update_job_status(job.id, new_status)
+                        job.status = new_status
+                except Exception as exc:
+                    print(f"Job {job.id} generated an exception: {exc}")
         return jobs
 
     def update_job_status(self, job_id: str, status: str):
@@ -172,6 +154,10 @@ class JobManager:
 
     def delete_job(self, job_id: str):
         self.conn.execute("DELETE FROM jobs WHERE id = ?", (job_id,))
+        self.conn.commit()
+
+    def delete_all_jobs(self):
+        self.conn.execute("DELETE FROM jobs")
         self.conn.commit()
 
     def close(self):
