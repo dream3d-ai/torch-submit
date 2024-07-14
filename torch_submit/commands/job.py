@@ -5,11 +5,16 @@ from typing import List, Optional
 import typer
 from fabric import Connection
 from rich.console import Console
-from rich.table import Table, box
+from rich.table import Table
 
 from ..cluster_config import ClusterConfig
 from ..connection import NodeConnection
-from ..executor import Executor, TorchrunExecutor, WorkingDirectoryArchiver
+from ..executor import (
+    BaseExecutor,
+    Executor,
+    TorchrunExecutor,
+    WorkingDirectoryArchiver,
+)
 from ..job import Job, JobManager
 from ..utils import generate_friendly_name
 
@@ -35,7 +40,7 @@ def submit(
         ..., help="The command to run, e.g. 'python main.py'"
     ),
     tail: bool = typer.Option(False, help="Tail the logs after submitting the job"),
-    executor: Executor = typer.Option(TorchrunExecutor, help="Executor to use")
+    executor: Executor = typer.Option(Executor.TORCHRUN, help="Executor to use"),
 ):
     """Submit a new job to a specified cluster."""
     try:
@@ -58,7 +63,7 @@ def submit(
     job_id = str(uuid.uuid4())
     archiver = WorkingDirectoryArchiver(job_id=job_id, job_name=name)
 
-    console.print("Archiving working directory...")    
+    console.print("Archiving working directory...")
     archived_dir = archiver.archive(working_dir)
     console.print(
         f"Working directory archived to: [bold green]{archived_dir}[/bold green]"
@@ -134,7 +139,7 @@ def list_jobs():
     job_manager = JobManager()
     jobs = job_manager.get_all_jobs_with_status()
 
-    table = Table(title="Job List", box=box.ROUNDED)
+    table = Table()
     table.add_column("ID", style="cyan", no_wrap=True)
     table.add_column("Name", style="magenta")
     table.add_column("Status", style="green")
@@ -229,3 +234,51 @@ def restart_job(job_id: str):
     except Exception as e:
         console.print(f"[bold red]Error restarting job:[/bold red] {str(e)}")
         raise typer.Exit(code=1)
+
+
+@app.command("delete")
+def delete_job(job_id: str = typer.Argument(..., help="Job ID to delete or 'all' to delete all jobs")):
+    """Delete a job."""
+    job_manager = JobManager()
+    jobs = job_manager.get_all_jobs_with_status()
+
+    if not job_id == "all":
+        jobs = [job for job in jobs if job.id == job_id]
+
+    # Prepare a list of job IDs to be deleted
+    job_ids_to_delete = [job.id for job in jobs]
+
+    # If no jobs found, exit
+    if not job_ids_to_delete:
+        console.print("No jobs found to delete.")
+        raise typer.Exit(code=1)
+
+    # Show confirmation prompt
+    if job_id == "all":
+        message = f"Are you sure you want to delete all {len(job_ids_to_delete)} jobs?"
+    else:
+        message = f"Are you sure you want to delete job {job_id}?"
+
+    if not typer.confirm(message):
+        console.print("Operation cancelled.")
+        raise typer.Exit(code=0)
+
+    # Stop the job if it is still running
+    for job in jobs:
+        if job.status not in ["finished", "crashed", "stopped"]:
+            try:
+                stop_job(job.id)
+            except typer.Exit:
+                console.print(f"Failed to stop job [bold yellow]{job.id}[/bold yellow]")
+
+    # Clean-up the job from remote (executor.cleanup)
+    for job in jobs:
+        try:
+            executor = BaseExecutor(job)
+            executor.cleanup()
+        except Exception:
+            pass
+
+    for job in jobs:
+        job_manager.delete_job(job.id)
+    console.print("All jobs have been stopped and deleted")
