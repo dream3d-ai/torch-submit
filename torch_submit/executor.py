@@ -143,11 +143,6 @@ class BaseExecutor(ABC):
 
 
 class DistributedExecutor(BaseExecutor):
-    def __init__(self, job: Job):
-        self.job = job
-        self.remote_dir = f"/tmp/torch_submit_job_{self.job.id}"
-        self.cluster_config = ClusterConfig()
-
     def get_command(self, rank: int):
         cluster = self.cluster_config.get_cluster(self.job.cluster)
         nnodes = len(cluster.worker_nodes) + 1  # including head node
@@ -165,11 +160,6 @@ class DistributedExecutor(BaseExecutor):
 
 
 class TorchrunExecutor(BaseExecutor):
-    def __init__(self, job: Job):
-        self.job = job
-        self.remote_dir = f"/tmp/torch_submit_job_{self.job.id}"
-        self.cluster_config = ClusterConfig()
-
     def get_command(self, rank: int):
         cluster = self.cluster_config.get_cluster(self.job.cluster)
         nnodes = len(cluster.worker_nodes) + 1  # including head node
