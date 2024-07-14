@@ -129,8 +129,15 @@ class BaseExecutor(ABC):
                 console.print(f"Error executing job on node {node.public_ip}")
                 pids[node] = None
         return pids
+    
+    def _prepare_command(self):
+        (
+            f"cd {self.remote_dir} && "
+            f"nohup {self.get_command()} "
+            f"{self.job.command}"
+        )
 
-    def _run_job(self, conn: Connection, executor_command: str, node_rank: int):
+    def _run_job(self, conn: Connection, node_rank: int):
         """
         Run the job on the specified node.
 
@@ -148,13 +155,9 @@ class BaseExecutor(ABC):
         console.print(
             f"[bold blue]Running job on {conn.host} (rank {node_rank})...[/bold blue]"
         )
-        full_command = (
-            f"cd {self.remote_dir} && "
-            f"nohup {executor_command} "
-            f"{self.job.command}"
-        )
-        conn.run(
-            f"{full_command} > {self.remote_dir}/output.log 2>&1 & echo $! > {self.remote_dir}/job.pid",
+        full_command = self._prepare_command()
+        result = conn.run(
+            f"{full_command} > {self.remote_dir}/output.log 2>&1; echo $? > {self.remote_dir}/exit_code.log & echo $! > {self.remote_dir}/job.pid",
             disown=True,
         )
         # Parse the PID from the job.pid file
@@ -344,16 +347,76 @@ class OptunaExecutor(DistributedExecutor):
         return super().execute()
 
 
+class DockerDistributedExecutor(DistributedExecutor):
+    """
+    EXPERIMENTAL:
+    DockerDistributedExecutor is an executor that runs distributed jobs inside Docker containers.
+
+    This executor extends the DistributedExecutor to provide Docker support, allowing the user to run
+    distributed jobs in isolated Docker environments with GPU support.
+
+    Exposes the following environment variables to the user script:
+        - MASTER_ADDR: The address of the master node.
+        - MASTER_PORT: The port on which the master node is listening.
+        - WORLD_SIZE: The total number of processes participating in the job.
+        - NODE_RANK: The rank of the current node.
+    """
+
+    def __init__(self, job: Job):
+        super().__init__(job)
+
+    def get_command(self, rank: int):
+        """
+        Constructs the command to run the job with the torch distributed environment variables set.
+
+        This method sets up the necessary environment variables for a distributed torch run, including
+        MASTER_ADDR, MASTER_PORT, WORLD_SIZE, and NODE_RANK. It then appends the user-provided command
+        to these environment variables.
+
+        Args:
+            rank (int): The rank of the current node.
+
+        Returns:
+            str: The full command to run the job with the necessary environment variables.
+        """
+        head_node = self.cluster.head_node
+        ip = head_node.private_ip or head_node.public_ip
+
+        world_size = 0
+        for node in self.cluster.worker_nodes + [self.cluster.head_node]:
+            world_size += node.num_gpus
+
+        return (
+            "docker run --rm"
+            "--gpus all --runtime=nvidia "
+            "--network host "
+            f"-v {self.remote_dir}:{self.remote_dir} "
+            f"-e MASTER_ADDR={ip} "
+            f"-e MASTER_PORT={self.port} "
+            f"-e WORLD_SIZE={world_size} "
+            f"-e NODE_RANK={rank} "
+        )
+
+    def _prepare_command(self):
+        return f"{self.get_command()} -- {self.job.command}"
+
+
 class Executor(str, Enum):
     TORCHRUN = "torchrun"
     DISTRIBUTED = "distributed"
     OPTUNA = "optuna"
 
-    def to_executor(self) -> BaseExecutor:
-        if self == Executor.TORCHRUN:
+    def to_executor(self, use_docker: bool = False) -> BaseExecutor:
+        if self == Executor.TORCHRUN and use_docker:
+            raise ValueError("Docker is not supported for torchrun")
+        elif self == Executor.TORCHRUN:
             return TorchrunExecutor
+        elif self == Executor.DISTRIBUTED and use_docker:
+            return DockerDistributedExecutor
         elif self == Executor.DISTRIBUTED:
             return DistributedExecutor
+        elif self == Executor.OPTUNA and use_docker:
+            return ValueError("Docker is not supported for optuna")
         elif self == Executor.OPTUNA:
             return OptunaExecutor
         else:
