@@ -72,38 +72,85 @@ class WorkingDirectoryArchiver:
 
 
 class BaseExecutor(ABC):
+    """
+    Base class for executing jobs across a cluster.
+
+    This class defines the structure for executing a job. Sub-classes must implement the get_command
+    method, which generates the command to be executed on each node in the cluster. The execute method
+    runs this command on each node, managing the setup and execution process.
+
+    Methods:
+        get_command(rank: int): Abstract method to create the command for the given node rank.
+        execute() -> Dict[Node, int]: Executes the job command on each node in the cluster and returns
+                                      a dictionary mapping nodes to their process IDs.
+    """
+
     def __init__(self, job: Job):
         self.job = job
         self.remote_dir = f"/tmp/torch_submit_job_{self.job.id}"
-        self.cluster_config = ClusterConfig()
+        self.cluster = ClusterConfig().get_cluster(self.job.cluster)
 
     @abstractmethod
-    def get_command(self, rank: int): ...
+    def get_command(self, rank: int):
+        """
+        Generate the command to be executed on the given node rank.
+
+        Args:
+            rank (int): The rank of the node in the cluster.
+
+        Returns:
+            str: The command to be executed on the node.
+        """
+        ...
 
     def execute(self) -> Dict[Node, int]:
-        cluster = self.cluster_config.get_cluster(self.job.cluster)
+        """
+        Execute the job command on each node in the cluster.
 
+        This method sets up the remote environment, copies the working directory,
+        and runs the job command on each node in the cluster. It manages the setup
+        and execution process, handling any exceptions that occur during execution.
+
+        Returns:
+            Dict[Node, int]: A dictionary mapping nodes to their process IDs.
+        """
         pids = {}
-        for i, node in enumerate([cluster.head_node] + cluster.worker_nodes):
+        for rank, node in enumerate(
+            [self.cluster.head_node] + self.cluster.worker_nodes
+        ):
             try:
                 with NodeConnection(node) as conn:
                     self._setup_remote_env(conn)
                     self._copy_working_dir(conn)
-                    command = self.get_command(i)
-                    pids[node] = self._run_job(conn, command, i)
+                    command = self.get_command(rank)
+                    pids[node] = self._run_job(conn, command, rank)
             except Exception:
                 console.print_exception()
                 console.print(f"Error executing job on node {node.public_ip}")
                 pids[node] = None
         return pids
 
-    def _run_job(self, conn: Connection, torchrun_command: str, node_rank: int):
+    def _run_job(self, conn: Connection, executor_command: str, node_rank: int):
+        """
+        Run the job on the specified node.
+
+        This method changes the directory to the remote directory, runs the provided torchrun command
+        along with the job command, and captures the process ID of the running job.
+
+        Args:
+            conn (Connection): The connection object to the node.
+            executor_command (str): The command with which to run the user-provided script.
+            node_rank (int): The rank of the node in the cluster.
+
+        Returns:
+            int: The process ID of the running job.
+        """
         console.print(
             f"[bold blue]Running job on {conn.host} (rank {node_rank})...[/bold blue]"
         )
         full_command = (
             f"cd {self.remote_dir} && "
-            f"nohup {torchrun_command} "
+            f"nohup {executor_command} "
             f"{self.job.command}"
         )
         conn.run(
@@ -132,6 +179,12 @@ class BaseExecutor(ABC):
         console.print("[bold green]Working directory successfully synced.[/bold green]")
 
     def cleanup(self):
+        """
+        Clean up the remote directories on all nodes.
+
+        This method removes the remote directory created for the job on each node.
+        If the cleanup fails on any node, a warning message is printed.
+        """
         for node in self.job.nodes:
             try:
                 with NodeConnection(node) as conn:
@@ -143,42 +196,88 @@ class BaseExecutor(ABC):
 
 
 class DistributedExecutor(BaseExecutor):
-    def get_command(self, rank: int):
-        cluster = self.cluster_config.get_cluster(self.job.cluster)
-        nnodes = len(cluster.worker_nodes) + 1  # including head node
+    """
+    The DistributedExecutor is responsible for setting up the environment for running
+    distributed PyTorch jobs. It ensures that the necessary environment variables are set
+    for the torch distributed environment, including MASTER_ADDR, MASTER_PORT, WORLD_SIZE,
+    and NODE_RANK. These variables are essential for coordinating the distributed training
+    process across multiple nodes and GPUs.
 
-        head_node = cluster.head_node
+    Exposes the following environment variables to the user script:
+        - MASTER_ADDR: The address of the master node.
+        - MASTER_PORT: The port on which the master node is listening.
+        - WORLD_SIZE: The total number of processes participating in the job.
+        - NODE_RANK: The rank of the current node.
+    """
+
+    def __init__(self, job: Job):
+        super().__init__(job)
+        self.port = random.randint(29400, 29499)
+
+    def get_command(self, rank: int):
+        """
+        Constructs the command to run the job with the torch distributed environment variables set.
+
+        This method sets up the necessary environment variables for a distributed torch run, including
+        MASTER_ADDR, MASTER_PORT, WORLD_SIZE, and NODE_RANK. It then appends the user-provided command
+        to these environment variables.
+
+        Args:
+            rank (int): The rank of the current node.
+
+        Returns:
+            str: The full command to run the job with the necessary environment variables.
+        """
+        head_node = self.cluster.head_node
         ip = head_node.private_ip or head_node.public_ip
-        port = random.randint(29400, 29499)
+
+        world_size = 0
+        for node in self.cluster.worker_nodes + [self.cluster.head_node]:
+            world_size += node.num_gpus
 
         return (
             f"MASTER_ADDR={ip} "
-            f"MASTER_PORT={port} "
-            f"WORLD_SIZE={nnodes} "
-            f"NODE_RANK={rank} "
+            f"MASTER_PORT={self.port} "
+            f"WORLD_SIZE={world_size} "
+            f"NODE_RANK={rank}"
         )
 
 
 class TorchrunExecutor(BaseExecutor):
+    def __init__(self, job: Job):
+        super().__init__(job)
+        self.port = random.randint(29400, 29499)
+
     def get_command(self, rank: int):
-        cluster = self.cluster_config.get_cluster(self.job.cluster)
-        nnodes = len(cluster.worker_nodes) + 1  # including head node
+        """
+        Constructs the command to run the job with torchrun.
+
+        This method sets up the necessary parameters for a torchrun command, including
+        the number of nodes, the number of processes per node, the rendezvous backend,
+        the rendezvous endpoint, the job ID, and the maximum number of restarts.
+
+        Args:
+            rank (int): The rank of the current node.
+
+        Returns:
+            str: The full command to run the job with torchrun.
+        """
+        nnodes = len(self.cluster.worker_nodes) + 1  # including head node
 
         # Determine nproc_per_node
         if self.job.num_gpus is not None:
             nproc_per_node = self.job.num_gpus
-        elif cluster.head_node.num_gpus is not None:
-            nproc_per_node = cluster.head_node.num_gpus
+        elif self.cluster.head_node.num_gpus is not None:
+            nproc_per_node = self.cluster.head_node.num_gpus
         else:
             nproc_per_node = 1  # Default to 1 if no GPU information is available
 
-        if len(cluster.worker_nodes) == 0:
-            rdzv_endpoint = "localhost"
+        if len(self.cluster.worker_nodes) == 0:
+            rdzv_endpoint = f"localhost:{self.port}"
         else:
-            head_node = cluster.head_node
+            head_node = self.cluster.head_node
             ip = head_node.private_ip or head_node.public_ip
-            port = random.randint(29400, 29499)
-            rdzv_endpoint = f"{ip}:{port}"
+            rdzv_endpoint = f"{ip}:{self.port}"
 
         return (
             f"torchrun "
@@ -192,15 +291,71 @@ class TorchrunExecutor(BaseExecutor):
         )
 
 
+class OptunaExecutor(DistributedExecutor):
+    """
+    The OptunaExecutor sets up and manages the execution of Optuna distributed optimization jobs.
+
+    The head node runs a SQLite database for Optuna and exposes it to the cluster. Each node in the cluster
+    runs a single Optuna process that will utilize all the GPUs available on that node.
+
+    Exposes the following environment variables to the user script:
+        - MASTER_ADDR: The address of the master node.
+        - MASTER_PORT: The port on which the master node is listening.
+        - WORLD_SIZE: The total number of processes participating in the job.
+        - NODE_RANK: The rank of the current node.
+        - STUDY_NAME: The name of the Optuna study (the job name).
+    """
+
+    def __init__(self, job: Job):
+        super().__init__(job)
+        self.db_port = random.randint(8001, 8999)
+
+    def setup_db(self) -> int:
+        with NodeConnection(self.cluster.head_node) as conn:
+            conn.run("pip install sqlite-web")
+            conn.run(f"sqlite3 {self.remote_dir}/optuna.db")
+            conn.run(f"sqlite_web mydatabase.db --host 0.0.0.0 --port {self.db_port}")
+
+    def get_command(self, rank: int):
+        if rank == 0:
+            world_size = self.cluster.head_node.num_gpus
+        else:
+            world_size = self.cluster.worker_nodes[rank - 1].num_gpus
+        return (
+            f"MASTER_ADDR=localhost "
+            f"MASTER_PORT={self.port} "
+            f"WORLD_SIZE={world_size} "
+            f"NODE_RANK={rank} "
+            f"STUDY_NAME={self.job.name}"
+        )
+
+    def execute(self) -> Dict[Node, int]:
+        """
+        Set up the database on the head node and then run the DistributedExecutor execute method.
+
+        This method first sets up the SQLite database on the head node for Optuna. After the database
+        is set up, it calls the execute method of the DistributedExecutor to run the job command on
+        each node in the cluster.
+
+        Returns:
+            Dict[Node, int]: A dictionary mapping nodes to their process IDs.
+        """
+        self.setup_db()
+        return super().execute()
+
+
 class Executor(str, Enum):
     TORCHRUN = "torchrun"
     DISTRIBUTED = "distributed"
+    OPTUNA = "optuna"
 
     def to_executor(self) -> BaseExecutor:
         if self == Executor.TORCHRUN:
             return TorchrunExecutor
         elif self == Executor.DISTRIBUTED:
             return DistributedExecutor
+        elif self == Executor.OPTUNA:
+            return OptunaExecutor
         else:
             raise ValueError(f"Unknown executor: {self}")
 
