@@ -108,3 +108,45 @@ def remove_cluster(name: str):
         console.print(f"Cluster [bold red]{name}[/bold red] removed.")
     else:
         console.print("Cluster removal cancelled.")
+
+
+@app.command("edit")
+def edit_cluster(name: str):
+    """Edit an existing cluster configuration."""
+    try:
+        cluster = cluster_config.get_cluster(name)
+    except ValueError:
+        console.print(f"[bold red]Error:[/bold red] Cluster '{name}' not found.")
+        raise typer.Exit(code=1)
+
+    console.print(f"Editing cluster: [bold green]{name}[/bold green]")
+
+    # Edit head node
+    head_node = cluster.head_node
+    head_node.public_ip = typer.prompt("Head node public IP", default=head_node.public_ip)
+    head_node.private_ip = typer.prompt("Head node private IP (optional)", default=head_node.private_ip  or "")
+    head_node.num_gpus = typer.prompt("Number of GPUs on head node", default=head_node.num_gpus, type=int)
+    head_node.nproc = typer.prompt("Number of processes on head node", default=head_node.nproc, type=int)
+    head_node.ssh_user = typer.prompt("SSH user for head node (optional)", default=head_node.ssh_user or "")
+    head_node.ssh_pub_key_path = typer.prompt("SSH public key path for head node (optional)", default=head_node.ssh_pub_key_path or "")
+
+    # Edit worker nodes
+    worker_nodes = []
+    for i, worker in enumerate(cluster.worker_nodes):
+        console.print(f"\nEditing worker node {i+1}")
+        public_ip = typer.prompt("Worker node public IP", default=worker.public_ip)
+        private_ip = typer.prompt("Worker node private IP (optional)", default=worker.private_ip or "")
+        num_gpus = typer.prompt("Number of GPUs on worker node", default=worker.num_gpus, type=int)
+        nproc = typer.prompt("Number of processes on worker node", default=worker.nproc, type=int)
+        ssh_user = typer.prompt("SSH user for worker node (optional)", default=worker.ssh_user or "")
+        ssh_pub_key_path = typer.prompt("SSH public key path for worker node (optional)", default=worker.ssh_pub_key_path or "")
+        
+        worker_node = Node(public_ip, private_ip or None, num_gpus, nproc, ssh_user, ssh_pub_key_path)
+        worker_nodes.append(worker_node)
+
+        if not typer.confirm("Add another worker node?", default=False):
+            break
+
+    # Update the cluster configuration
+    cluster_config.update_cluster(name, head_node, worker_nodes)
+    console.print(f"Cluster [bold green]{name}[/bold green] updated successfully.")
