@@ -5,15 +5,35 @@
 > Auto-generated documentation for [commands.job](../../torch_submit/commands/job.py) module.
 
 - [Job](#job)
+  - [delete_job](#delete_job)
   - [list_jobs](#list_jobs)
   - [print_logs](#print_logs)
   - [restart_job](#restart_job)
   - [stop_job](#stop_job)
   - [submit](#submit)
 
+## delete_job
+
+[Show source in job.py:240](../../torch_submit/commands/job.py#L240)
+
+Delete a job.
+
+#### Signature
+
+```python
+@app.command("delete")
+def delete_job(
+    job_id: str = typer.Argument(
+        ..., help="Job ID to delete or 'all' to delete all jobs"
+    )
+): ...
+```
+
+
+
 ## list_jobs
 
-[Show source in job.py:131](../../torch_submit/commands/job.py#L131)
+[Show source in job.py:138](../../torch_submit/commands/job.py#L138)
 
 List all submitted jobs.
 
@@ -28,7 +48,7 @@ def list_jobs(): ...
 
 ## print_logs
 
-[Show source in job.py:108](../../torch_submit/commands/job.py#L108)
+[Show source in job.py:115](../../torch_submit/commands/job.py#L115)
 
 Tail the logs of a specific job.
 
@@ -43,7 +63,7 @@ def print_logs(job_id: str, tail: bool = typer.Option(False, help="Tail the logs
 
 ## restart_job
 
-[Show source in job.py:188](../../torch_submit/commands/job.py#L188)
+[Show source in job.py:195](../../torch_submit/commands/job.py#L195)
 
 Restart a stopped job.
 
@@ -58,7 +78,7 @@ def restart_job(job_id: str): ...
 
 ## stop_job
 
-[Show source in job.py:163](../../torch_submit/commands/job.py#L163)
+[Show source in job.py:170](../../torch_submit/commands/job.py#L170)
 
 Stop a running job.
 
@@ -73,7 +93,7 @@ def stop_job(job_id: str): ...
 
 ## submit
 
-[Show source in job.py:22](../../torch_submit/commands/job.py#L22)
+[Show source in job.py:25](../../torch_submit/commands/job.py#L25)
 
 Submit a new job to a specified cluster.
 
@@ -95,10 +115,10 @@ def submit(
         ..., help="The command to run, e.g. 'python main.py'"
     ),
     tail: bool = typer.Option(False, help="Tail the logs after submitting the job"),
-    executor: Executor = typer.Option(TorchrunExecutor, help="Executor to use"),
+    executor: Executor = typer.Option(Executor.TORCHRUN, help="Executor to use"),
 ): ...
 ```
 
 #### See also
 
-- [Executor](../executor.md#executor)
+- [Executor](../types.md#executor)

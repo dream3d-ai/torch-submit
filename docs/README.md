@@ -13,4 +13,5 @@ A full list of `Torch-submit` project modules.
 - [Connection](./connection.md#connection)
 - [Executor](./executor.md#executor)
 - [Job](./job.md#job)
+- [Types](./types.md#types)
 - [Utils](./utils.md#utils)

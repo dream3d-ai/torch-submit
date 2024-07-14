@@ -6,6 +6,7 @@
 
 - [Cluster](#cluster)
   - [create_cluster](#create_cluster)
+  - [edit_cluster](#edit_cluster)
   - [list_clusters](#list_clusters)
   - [remove_cluster](#remove_cluster)
 
@@ -20,6 +21,21 @@ Interactively create a new cluster configuration.
 ```python
 @app.command("create")
 def create_cluster(): ...
+```
+
+
+
+## edit_cluster
+
+[Show source in cluster.py:113](../../torch_submit/commands/cluster.py#L113)
+
+Edit an existing cluster configuration.
+
+#### Signature
+
+```python
+@app.command("edit")
+def edit_cluster(name: str): ...
 ```
 
 

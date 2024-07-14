@@ -14,8 +14,6 @@
     - [DistributedExecutor().get_command](#distributedexecutor()get_command)
   - [DockerDistributedExecutor](#dockerdistributedexecutor)
     - [DockerDistributedExecutor().get_command](#dockerdistributedexecutor()get_command)
-  - [Executor](#executor-1)
-    - [Executor().to_executor](#executor()to_executor)
   - [JobExecutionManager](#jobexecutionmanager)
     - [JobExecutionManager.cancel_job](#jobexecutionmanagercancel_job)
     - [JobExecutionManager.submit_job](#jobexecutionmanagersubmit_job)
@@ -30,7 +28,7 @@
 
 ## BaseExecutor
 
-[Show source in executor.py:74](../torch_submit/executor.py#L74)
+[Show source in executor.py:73](../torch_submit/executor.py#L73)
 
 Base class for executing jobs across a cluster.
 
@@ -53,11 +51,11 @@ class BaseExecutor(ABC):
 
 #### See also
 
-- [Job](./job.md#job)
+- [Job](./types.md#job)
 
 ### BaseExecutor()._run_job
 
-[Show source in executor.py:140](../torch_submit/executor.py#L140)
+[Show source in executor.py:138](../torch_submit/executor.py#L138)
 
 Run the job on the specified node.
 
@@ -82,7 +80,7 @@ def _run_job(self, conn: Connection, node_rank: int): ...
 
 ### BaseExecutor().cleanup
 
-[Show source in executor.py:184](../torch_submit/executor.py#L184)
+[Show source in executor.py:186](../torch_submit/executor.py#L186)
 
 Clean up the remote directories on all nodes.
 
@@ -97,7 +95,7 @@ def cleanup(self): ...
 
 ### BaseExecutor().execute
 
-[Show source in executor.py:106](../torch_submit/executor.py#L106)
+[Show source in executor.py:105](../torch_submit/executor.py#L105)
 
 Execute the job command on each node in the cluster.
 
@@ -121,7 +119,7 @@ def execute(self) -> Dict[Node, int]: ...
 
 ### BaseExecutor().get_command
 
-[Show source in executor.py:93](../torch_submit/executor.py#L93)
+[Show source in executor.py:92](../torch_submit/executor.py#L92)
 
 Generate the command to be executed on the given node rank.
 
@@ -144,7 +142,7 @@ def get_command(self, rank: int): ...
 
 ## DistributedExecutor
 
-[Show source in executor.py:201](../torch_submit/executor.py#L201)
+[Show source in executor.py:203](../torch_submit/executor.py#L203)
 
 The DistributedExecutor is responsible for setting up the environment for running
 distributed PyTorch jobs. It ensures that the necessary environment variables are set
@@ -168,11 +166,11 @@ class DistributedExecutor(BaseExecutor):
 #### See also
 
 - [BaseExecutor](#baseexecutor)
-- [Job](./job.md#job)
+- [Job](./types.md#job)
 
 ### DistributedExecutor().get_command
 
-[Show source in executor.py:220](../torch_submit/executor.py#L220)
+[Show source in executor.py:222](../torch_submit/executor.py#L222)
 
 Constructs the command to run the job with the torch distributed environment variables set.
 
@@ -198,7 +196,7 @@ def get_command(self, rank: int): ...
 
 ## DockerDistributedExecutor
 
-[Show source in executor.py:351](../torch_submit/executor.py#L351)
+[Show source in executor.py:353](../torch_submit/executor.py#L353)
 
 EXPERIMENTAL:
 DockerDistributedExecutor is an executor that runs distributed jobs inside Docker containers.
@@ -222,11 +220,11 @@ class DockerDistributedExecutor(DistributedExecutor):
 #### See also
 
 - [DistributedExecutor](#distributedexecutor)
-- [Job](./job.md#job)
+- [Job](./types.md#job)
 
 ### DockerDistributedExecutor().get_command
 
-[Show source in executor.py:369](../torch_submit/executor.py#L369)
+[Show source in executor.py:371](../torch_submit/executor.py#L371)
 
 Constructs the command to run the job with the torch distributed environment variables set.
 
@@ -250,35 +248,9 @@ def get_command(self, rank: int): ...
 
 
 
-## Executor
-
-[Show source in executor.py:405](../torch_submit/executor.py#L405)
-
-#### Signature
-
-```python
-class Executor(str, Enum): ...
-```
-
-### Executor().to_executor
-
-[Show source in executor.py:410](../torch_submit/executor.py#L410)
-
-#### Signature
-
-```python
-def to_executor(self, use_docker: bool = False) -> BaseExecutor: ...
-```
-
-#### See also
-
-- [BaseExecutor](#baseexecutor)
-
-
-
 ## JobExecutionManager
 
-[Show source in executor.py:427](../torch_submit/executor.py#L427)
+[Show source in executor.py:407](../torch_submit/executor.py#L407)
 
 #### Signature
 
@@ -288,7 +260,7 @@ class JobExecutionManager: ...
 
 ### JobExecutionManager.cancel_job
 
-[Show source in executor.py:442](../torch_submit/executor.py#L442)
+[Show source in executor.py:422](../torch_submit/executor.py#L422)
 
 #### Signature
 
@@ -299,29 +271,28 @@ def cancel_job(job: Job): ...
 
 #### See also
 
-- [Job](./job.md#job)
+- [Job](./types.md#job)
 
 ### JobExecutionManager.submit_job
 
-[Show source in executor.py:428](../torch_submit/executor.py#L428)
+[Show source in executor.py:408](../torch_submit/executor.py#L408)
 
 #### Signature
 
 ```python
 @staticmethod
-def submit_job(job: Job, executor: Executor): ...
+def submit_job(job: Job): ...
 ```
 
 #### See also
 
-- [Executor](#executor)
-- [Job](./job.md#job)
+- [Job](./types.md#job)
 
 
 
 ## OptunaExecutor
 
-[Show source in executor.py:298](../torch_submit/executor.py#L298)
+[Show source in executor.py:300](../torch_submit/executor.py#L300)
 
 The OptunaExecutor sets up and manages the execution of Optuna distributed optimization jobs.
 
@@ -345,11 +316,11 @@ class OptunaExecutor(DistributedExecutor):
 #### See also
 
 - [DistributedExecutor](#distributedexecutor)
-- [Job](./job.md#job)
+- [Job](./types.md#job)
 
 ### OptunaExecutor().execute
 
-[Show source in executor.py:336](../torch_submit/executor.py#L336)
+[Show source in executor.py:338](../torch_submit/executor.py#L338)
 
 Set up the database on the head node and then run the DistributedExecutor execute method.
 
@@ -373,7 +344,7 @@ def execute(self) -> Dict[Node, int]: ...
 
 ### OptunaExecutor().get_command
 
-[Show source in executor.py:323](../torch_submit/executor.py#L323)
+[Show source in executor.py:325](../torch_submit/executor.py#L325)
 
 #### Signature
 
@@ -383,7 +354,7 @@ def get_command(self, rank: int): ...
 
 ### OptunaExecutor().setup_db
 
-[Show source in executor.py:317](../torch_submit/executor.py#L317)
+[Show source in executor.py:319](../torch_submit/executor.py#L319)
 
 #### Signature
 
@@ -395,7 +366,7 @@ def setup_db(self) -> int: ...
 
 ## TorchrunExecutor
 
-[Show source in executor.py:249](../torch_submit/executor.py#L249)
+[Show source in executor.py:251](../torch_submit/executor.py#L251)
 
 #### Signature
 
@@ -407,11 +378,11 @@ class TorchrunExecutor(BaseExecutor):
 #### See also
 
 - [BaseExecutor](#baseexecutor)
-- [Job](./job.md#job)
+- [Job](./types.md#job)
 
 ### TorchrunExecutor().get_command
 
-[Show source in executor.py:254](../torch_submit/executor.py#L254)
+[Show source in executor.py:256](../torch_submit/executor.py#L256)
 
 Constructs the command to run the job with torchrun.
 
@@ -437,7 +408,7 @@ def get_command(self, rank: int): ...
 
 ## WorkingDirectoryArchiver
 
-[Show source in executor.py:21](../torch_submit/executor.py#L21)
+[Show source in executor.py:20](../torch_submit/executor.py#L20)
 
 #### Signature
 
@@ -448,7 +419,7 @@ class WorkingDirectoryArchiver:
 
 ### WorkingDirectoryArchiver().archive
 
-[Show source in executor.py:29](../torch_submit/executor.py#L29)
+[Show source in executor.py:28](../torch_submit/executor.py#L28)
 
 #### Signature
 
