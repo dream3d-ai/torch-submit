@@ -24,7 +24,7 @@ Delete a job.
 @app.command("delete")
 def delete_job(
     job_id: str = typer.Argument(
-        ..., help="Job ID to delete or 'all' to delete all jobs"
+        ..., help="Job ID or name to delete or 'all' to delete all jobs"
     )
 ): ...
 ```
@@ -56,7 +56,10 @@ Tail the logs of a specific job.
 
 ```python
 @app.command("logs")
-def print_logs(job_id: str, tail: bool = typer.Option(False, help="Tail the logs")): ...
+def print_logs(
+    job_id: str = typer.Argument(..., help="Job ID or name"),
+    tail: bool = typer.Option(False, help="Tail the logs"),
+): ...
 ```
 
 
@@ -71,7 +74,7 @@ Restart a stopped job.
 
 ```python
 @app.command("restart")
-def restart_job(job_id: str): ...
+def restart_job(job_id: str = typer.Argument(..., help="Job ID or name")): ...
 ```
 
 
@@ -86,7 +89,7 @@ Stop a running job.
 
 ```python
 @app.command("stop")
-def stop_job(job_id: str): ...
+def stop_job(job_id: str = typer.Argument(..., help="Job ID or name")): ...
 ```
 
 

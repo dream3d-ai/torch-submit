@@ -44,9 +44,17 @@ class JobManager:
         )
         self.conn.commit()
 
-    def get_job(self, job_id: str) -> Optional[Job]:
-        cursor = self.conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,))
+    def get_job(self, job_id_or_name: str) -> Optional[Job]:
+        # Try to get by id first
+        cursor = self.conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id_or_name,))
         row = cursor.fetchone()
+        if not row:
+            # If not found by id, try to get by name
+            cursor = self.conn.execute(
+                "SELECT * FROM jobs WHERE name = ?", (job_id_or_name,)
+            )
+            row = cursor.fetchone()
+
         if not row:
             return None
         return Job.from_db(row)

@@ -114,7 +114,7 @@ def submit(
 
 @app.command("logs")
 def print_logs(
-    job_id: str,
+    job_id: str = typer.Argument(..., help="Job ID or name"),
     tail: bool = typer.Option(False, help="Tail the logs"),
 ):
     """Tail the logs of a specific job."""
@@ -168,7 +168,7 @@ def list_jobs():
 
 
 @app.command("stop")
-def stop_job(job_id: str):
+def stop_job(job_id: str = typer.Argument(..., help="Job ID or name")):
     """Stop a running job."""
     job_manager = JobManager()
     job = job_manager.get_job(job_id)
@@ -193,7 +193,7 @@ def stop_job(job_id: str):
 
 
 @app.command("restart")
-def restart_job(job_id: str):
+def restart_job(job_id: str = typer.Argument(..., help="Job ID or name")):
     """Restart a stopped job."""
     job = job_manager.get_job(job_id)
     if not job:
@@ -240,7 +240,7 @@ def restart_job(job_id: str):
 @app.command("delete")
 def delete_job(
     job_id: str = typer.Argument(
-        ..., help="Job ID to delete or 'all' to delete all jobs"
+        ..., help="Job ID or name to delete or 'all' to delete all jobs"
     ),
 ):
     """Delete a job."""
@@ -286,4 +286,9 @@ def delete_job(
 
     for job in jobs:
         job_manager.delete_job(job.id)
-    console.print("All jobs have been stopped and deleted")
+        
+    if job_id == "all":
+        console.print(f"[bold green]Successfully deleted all {len(job_ids_to_delete)} jobs.[/bold green]")
+    else:
+        console.print(f"[bold green]Successfully deleted job {job_id}.[/bold green]")
+    console.print("All specified jobs have been stopped and removed from the system.")
