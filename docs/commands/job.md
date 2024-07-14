@@ -13,7 +13,7 @@
 
 ## list_jobs
 
-[Show source in job.py:129](../../torch_submit/commands/job.py#L129)
+[Show source in job.py:131](../../torch_submit/commands/job.py#L131)
 
 List all submitted jobs.
 
@@ -28,7 +28,7 @@ def list_jobs(): ...
 
 ## print_logs
 
-[Show source in job.py:106](../../torch_submit/commands/job.py#L106)
+[Show source in job.py:108](../../torch_submit/commands/job.py#L108)
 
 Tail the logs of a specific job.
 
@@ -43,7 +43,7 @@ def print_logs(job_id: str, tail: bool = typer.Option(False, help="Tail the logs
 
 ## restart_job
 
-[Show source in job.py:186](../../torch_submit/commands/job.py#L186)
+[Show source in job.py:188](../../torch_submit/commands/job.py#L188)
 
 Restart a stopped job.
 
@@ -58,7 +58,7 @@ def restart_job(job_id: str): ...
 
 ## stop_job
 
-[Show source in job.py:161](../../torch_submit/commands/job.py#L161)
+[Show source in job.py:163](../../torch_submit/commands/job.py#L163)
 
 Stop a running job.
 
@@ -95,5 +95,10 @@ def submit(
         ..., help="The command to run, e.g. 'python main.py'"
     ),
     tail: bool = typer.Option(False, help="Tail the logs after submitting the job"),
+    executor: Executor = typer.Option(TorchrunExecutor, help="Executor to use"),
 ): ...
 ```
+
+#### See also
+
+- [Executor](../executor.md#executor)

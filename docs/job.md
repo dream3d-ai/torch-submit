@@ -66,12 +66,11 @@ def add_job(self, job: Job): ...
 #### Signature
 
 ```python
-def check_job_status(self, job: Job, cluster_config: ClusterConfig) -> str: ...
+def check_job_status(self, job: Job) -> str: ...
 ```
 
 #### See also
 
-- [ClusterConfig](./cluster_config.md#clusterconfig)
 - [Job](#job)
 
 ### JobManager().close
@@ -111,12 +110,11 @@ def delete_job(self, job_id: str): ...
 #### Signature
 
 ```python
-def get_all_jobs_with_status(self, cluster_config: ClusterConfig) -> List[Job]: ...
+def get_all_jobs_with_status(self) -> List[Job]: ...
 ```
 
 #### See also
 
-- [ClusterConfig](./cluster_config.md#clusterconfig)
 - [Job](#job)
 
 ### JobManager().get_job
