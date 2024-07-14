@@ -285,6 +285,7 @@ class TorchrunExecutor(BaseExecutor):
         return (
             f"torchrun "
             f"--nnodes={nnodes} "
+            f"--node_rank={rank} "
             f"--nproc-per-node={nproc_per_node} "
             f"--rdzv-backend=c10d "
             f"--rdzv-endpoint={rdzv_endpoint} "
