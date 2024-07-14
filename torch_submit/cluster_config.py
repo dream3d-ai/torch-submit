@@ -36,6 +36,9 @@ class Node:
     def to_db(self):
         return f"{self.public_ip}:{self.private_ip or 'None'}:{self.num_gpus}:{self.nproc}:{self.ssh_user or 'None'}:{self.ssh_pub_key_path or 'None'}"
 
+    def __str__(self):
+        return f"Node(public_ip={self.public_ip}, private_ip={self.private_ip}, num_gpus={self.num_gpus}, nproc={self.nproc}, ssh_user={self.ssh_user}, ssh_pub_key_path={self.ssh_pub_key_path})"
+
     def __hash__(self):
         return hash(self.public_ip)
 

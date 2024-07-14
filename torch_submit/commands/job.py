@@ -3,7 +3,6 @@ import uuid
 from typing import List, Optional
 
 import typer
-from fabric import Connection
 from rich.console import Console
 from rich.table import Table
 
@@ -11,11 +10,10 @@ from ..cluster_config import ClusterConfig
 from ..connection import NodeConnection
 from ..executor import (
     BaseExecutor,
-    Executor,
-    TorchrunExecutor,
     WorkingDirectoryArchiver,
 )
-from ..job import Job, JobManager
+from ..job import JobManager
+from ..types import Executor, Job, JobStatus
 from ..utils import generate_friendly_name
 
 app = typer.Typer()
@@ -73,26 +71,30 @@ def submit(
     job = Job(
         id=job_id,
         name=name,
-        status="submitted",
+        status=JobStatus.SUBMITTED,
         working_dir=archived_dir,
         nodes=nodes,
         cluster=cluster,
         command=" ".join(command),
         max_restarts=max_restarts,
         num_gpus=num_gpus,
+        executor=executor,
     )
     console.print("Submitting job...")
     job_manager.add_job(job)
 
-    job_executor = executor.to_executor(job)
+    job_executor = job.get_executor()
     pids = job_executor.execute()
 
     if all(pid is None for pid in pids.values()):
-        job_manager.update_job_status(job_id, "crashed")
-        console.print(f"Job [bold red]{job_id}[/bold red] failed to start")
+        job_manager.update_job_status(job_id, JobStatus.CRASHED)
+        console.print(f"Job [bold red]{job_id}[/bold red] failed to start.")
+        for node in nodes:
+            with NodeConnection(node) as c:
+                c.run(f"pkill -TERM -P {pids[node]}", hide=True)
         raise typer.Exit(code=1)
 
-    job_manager.update_job_status(job_id, "started")
+    job_manager.update_job_status(job_id, JobStatus.RUNNING)
     job_manager.update_job_pids(job_id, pids)
 
     console.print(f"Job submitted with name: [bold green]{name}[/bold green]")
@@ -151,9 +153,9 @@ def list_jobs():
             "started": "bold yellow",
             "running": "bold green",
             "crashed": "bold red",
-            "stopping": "bold orange",
+            "stopping": "bold yellow",
             "stopped": "bold cyan",
-        }.get(job.status, "")
+        }.get(job.status, "bold white")
 
         table.add_row(
             job.id,
@@ -180,10 +182,10 @@ def stop_job(job_id: str):
 
     try:
         for node, pid in job.pids.items():
-            with Connection(node) as c:
+            with NodeConnection(node) as c:
                 c.run(f"pkill -TERM -P {pid}", warn=True)
 
-        job_manager.update_job_status(job_id, "stopping")
+        job_manager.update_job_status(job_id, JobStatus.STOPPING)
         console.print(f"Job [bold green]{job_id}[/bold green] is stopping")
     except Exception as e:
         console.print(f"[bold red]Error stopping job:[/bold red] {str(e)}")
@@ -215,8 +217,7 @@ def restart_job(job_id: str):
 
         # Check if the job is already running on any node
         for node in [cluster.head_node] + cluster.worker_nodes:
-            node_ip = node.private_ip or node.public_ip
-            with Connection(node_ip) as c:
+            with NodeConnection(node) as c:
                 result = c.run(f"pgrep -f '{script_path}'", warn=True)
                 if result.ok:
                     console.print(
@@ -225,10 +226,10 @@ def restart_job(job_id: str):
                     raise typer.Exit(code=1)
 
         # If not running, restart the job
-        executor = TorchrunExecutor(job)
+        executor = job.get_executor()
         pids = executor.execute()
 
-        job_manager.update_job_status(job_id, "running")
+        job_manager.update_job_status(job_id, JobStatus.RUNNING)
         job_manager.update_job_pids(job_id, pids)
         console.print(f"Job [bold green]{job_id}[/bold green] has been restarted")
     except Exception as e:
@@ -237,7 +238,11 @@ def restart_job(job_id: str):
 
 
 @app.command("delete")
-def delete_job(job_id: str = typer.Argument(..., help="Job ID to delete or 'all' to delete all jobs")):
+def delete_job(
+    job_id: str = typer.Argument(
+        ..., help="Job ID to delete or 'all' to delete all jobs"
+    ),
+):
     """Delete a job."""
     job_manager = JobManager()
     jobs = job_manager.get_all_jobs_with_status()

@@ -1,51 +1,11 @@
 import os
 import sqlite3
-import uuid
-from dataclasses import dataclass, field
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Optional
 
 from .cluster_config import Node
 from .connection import NodeConnection
-
-
-@dataclass
-class Job:
-    id: str
-    name: str
-    status: str
-    working_dir: str
-    nodes: List[Node]
-    cluster: str
-    command: str
-    max_restarts: int = 0
-    num_gpus: Optional[int] = None
-    pids: Dict[str, int] = field(default_factory=dict)
-
-    @classmethod
-    def from_db(cls, row: Tuple) -> "Job":
-        return cls(
-            id=row[0],
-            name=row[1],
-            status=row[2],
-            working_dir=row[3],
-            nodes=[Node.from_db(node) for node in row[4].split(",")],
-            cluster=row[5],
-            command=row[6],
-        )
-
-    def to_db(self) -> Tuple:
-        return (
-            self.id,
-            self.name,
-            self.status,
-            self.working_dir,
-            ",".join([node.to_db() for node in self.nodes]),
-            self.cluster,
-            self.command,
-            self.max_restarts,
-            self.num_gpus,
-            ",".join([f"{k}:{v}" for k, v in self.pids.items()]),
-        )
+from .types import Job, JobStatus
 
 
 class JobManager:
@@ -69,15 +29,16 @@ class JobManager:
                 command TEXT,
                 max_restarts INTEGER DEFAULT 0,
                 num_gpus INTEGER DEFAULT NULL,
-                pids TEXT DEFAULT NULL
+                pids TEXT DEFAULT NULL,
+                executor TEXT DEFAULT NULL
             )
         """)
 
     def add_job(self, job: Job):
         self.conn.execute(
             """
-            INSERT INTO jobs (id, name, status, working_dir, nodes, cluster, command, max_restarts, num_gpus, pids)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO jobs (id, name, status, working_dir, nodes, cluster, command, max_restarts, num_gpus, pids, executor)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             job.to_db(),
         )
@@ -95,34 +56,69 @@ class JobManager:
         return [Job.from_db(row) for row in cursor.fetchall()]
 
     def check_job_status(self, job: Job) -> str:
-        if job.status in ["stopped", "crashed"]:
+        if job.status in [JobStatus.STOPPED, JobStatus.FINISHED, JobStatus.CRASHED]:
             return job.status
 
-        if job.status in ["submitted", "running", "started", "stopping"]:
-            for node, pid in job.pids.items():
+        if job.status in [JobStatus.SUBMITTED, JobStatus.RUNNING, JobStatus.STOPPING]:
+            node_statuses = []
+
+            def check_node_status(node):
                 try:
-                    with NodeConnection(node, connect_timeout=5) as c:
+                    with NodeConnection(node) as c:
                         result = c.run(
-                            f"ps -p {pid}",
+                            f"ps -p {job.pids[node]}",
                             warn=True,
                             hide=True,
                         )
-                        if result.ok and job.status == "submitted":
-                            return "running"
-                        elif result.ok and job.status == "stopping":
-                            return "stopping"
-                        elif not result.ok and job.status == "running":
-                            return "crashed"
-                        elif not result.ok and job.status == "stopping":
-                            return "stopped"
+
+                        if result.ok and job.status in [
+                            JobStatus.SUBMITTED,
+                            JobStatus.RUNNING,
+                        ]:
+                            return JobStatus.RUNNING
+                        elif result.ok and job.status == JobStatus.STOPPING:
+                            return JobStatus.STOPPING
+                        elif not result.ok and job.status == JobStatus.STOPPING:
+                            return JobStatus.STOPPED
+                        elif not result.ok:
+                            exit_code_result = c.run(
+                                f"cat {self.remote_dir}/exit_code.log",
+                                warn=True,
+                                hide=True,
+                            )
+                            if (
+                                exit_code_result.ok
+                                and exit_code_result.stdout.strip() == "0"
+                            ):
+                                return JobStatus.FINISHED
+                            else:
+                                return JobStatus.CRASHED
+                        else:
+                            raise RuntimeError(
+                                f"Unknown job status: {job.status} for node {node}, {result.stdout}"
+                            )
+
                 except Exception:
-                    # If we can't connect to a node, we'll continue to the next one
-                    continue
+                    return JobStatus.UNKNOWN
 
-            # If we've checked all nodes and found no running processes
-            return "crashed"
+            with ThreadPoolExecutor() as executor:
+                node_statuses = list(executor.map(check_node_status, job.nodes))
 
-        return job.status  # Return the current status if it's not one we're updating
+            # Aggregate job status across all nodes
+            if all(status == JobStatus.RUNNING for status in node_statuses):
+                return JobStatus.RUNNING
+            elif all(status == JobStatus.STOPPED for status in node_statuses):
+                return JobStatus.STOPPED
+            elif all(status == JobStatus.FINISHED for status in node_statuses):
+                return JobStatus.FINISHED
+            elif any(status == JobStatus.CRASHED for status in node_statuses):
+                return JobStatus.CRASHED
+            elif any(status == JobStatus.STOPPING for status in node_statuses):
+                return JobStatus.STOPPING
+            else:
+                return JobStatus.UNKNOWN
+
+        raise RuntimeError(f"Unknown job status: {job.status}")
 
     def get_all_jobs_with_status(self) -> List[Job]:
         jobs = self.list_jobs()
@@ -138,8 +134,12 @@ class JobManager:
                     print(f"Job {job.id} generated an exception: {exc}")
         return jobs
 
-    def update_job_status(self, job_id: str, status: str):
-        self.conn.execute("UPDATE jobs SET status = ? WHERE id = ?", (status, job_id))
+    def update_job_status(self, job_id: str, status: JobStatus):
+        if not isinstance(status, JobStatus):
+            raise ValueError(f"Invalid job status: {status}")
+        self.conn.execute(
+            "UPDATE jobs SET status = ? WHERE id = ?", (status.value, job_id)
+        )
         self.conn.commit()
 
     def update_job_pids(self, job_id: str, pids: Dict[Node, int]):
@@ -166,15 +166,3 @@ class JobManager:
     def migrate_table(self):
         # Add any necessary migration steps here
         pass
-
-
-def create_job(name: str, working_dir: str, nodes: List[str], cluster: str) -> Job:
-    return Job(
-        id=str(uuid.uuid4()),
-        name=name,
-        status="submitted",
-        working_dir=working_dir,
-        nodes=nodes,
-        cluster=cluster,
-        command="",
-    )

@@ -17,7 +17,8 @@ class NodeConnection:
         self.connection = Connection(
             self.node.public_ip, user=self.node.ssh_user, connect_kwargs=connect_kwargs
         )
-        return self.connection  # Return the connection object directly
+        self.connection.open()
+        return self.connection
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.connection.close()  # Ensure the connection is closed
+        self.connection.close()

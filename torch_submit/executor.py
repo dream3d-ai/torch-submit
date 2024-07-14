@@ -4,7 +4,6 @@ import os
 import random
 import zipfile
 from abc import ABC, abstractmethod
-from enum import Enum
 from typing import Dict
 
 from fabric import Connection
@@ -13,7 +12,7 @@ from rich.console import Console
 
 from .cluster_config import ClusterConfig, Node
 from .connection import NodeConnection
-from .job import Job
+from .types import Job
 
 console = Console()
 
@@ -405,32 +404,10 @@ class DockerDistributedExecutor(DistributedExecutor):
         return f"{self.get_command(rank)} -- {self.job.command}"
 
 
-class Executor(str, Enum):
-    TORCHRUN = "torchrun"
-    DISTRIBUTED = "distributed"
-    OPTUNA = "optuna"
-
-    def to_executor(self, job: Job, use_docker: bool = False) -> BaseExecutor:
-        if self == Executor.TORCHRUN and use_docker:
-            raise ValueError("Docker is not supported for torchrun")
-        elif self == Executor.TORCHRUN:
-            return TorchrunExecutor(job)
-        elif self == Executor.DISTRIBUTED and use_docker:
-            return DockerDistributedExecutor(job)
-        elif self == Executor.DISTRIBUTED:
-            return DistributedExecutor(job)
-        elif self == Executor.OPTUNA and use_docker:
-            return ValueError("Docker is not supported for optuna")
-        elif self == Executor.OPTUNA:
-            return OptunaExecutor(job)
-        else:
-            raise ValueError(f"Unknown executor: {self}")
-
-
 class JobExecutionManager:
     @staticmethod
-    def submit_job(job: Job, executor: Executor):
-        executor = Executor.to_executor(job)
+    def submit_job(job: Job):
+        executor = job.get_executor()
         try:
             executor.execute()
             console.print(
@@ -444,7 +421,7 @@ class JobExecutionManager:
 
     @staticmethod
     def cancel_job(job: Job):
-        executor = TorchrunExecutor(job)
+        executor = job.get_executor()
         try:
             executor.cleanup()
             console.print(
