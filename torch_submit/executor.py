@@ -213,6 +213,7 @@ class DistributedExecutor(BaseExecutor):
         - MASTER_PORT: The port on which the master node is listening.
         - WORLD_SIZE: The total number of processes participating in the job.
         - NODE_RANK: The rank of the current node.
+        - LOCAL_WORLD_SIZE: The number of processes on the current node.
     """
 
     def __init__(self, job: Job):
@@ -244,7 +245,8 @@ class DistributedExecutor(BaseExecutor):
             f"MASTER_ADDR={ip} "
             f"MASTER_PORT={self.port} "
             f"WORLD_SIZE={world_size} "
-            f"NODE_RANK={rank}"
+            f"NODE_RANK={rank} "
+            f"LOCAL_WORLD_SIZE={self.cluster.worker_nodes[rank].num_gpus} "
         )
 
 
@@ -398,6 +400,7 @@ class DockerDistributedExecutor(DistributedExecutor):
             f"-e MASTER_PORT={self.port} "
             f"-e WORLD_SIZE={world_size} "
             f"-e NODE_RANK={rank} "
+            f"-e LOCAL_WORLD_SIZE={self.cluster.worker_nodes[rank].num_gpus} "
             f"{self.job.docker_image} "
         )
 
