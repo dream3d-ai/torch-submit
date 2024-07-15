@@ -398,6 +398,7 @@ class DockerDistributedExecutor(DistributedExecutor):
             f"-e MASTER_PORT={self.port} "
             f"-e WORLD_SIZE={world_size} "
             f"-e NODE_RANK={rank} "
+            f"{self.job.docker_image} "
         )
 
     def _prepare_command(self, rank: int):

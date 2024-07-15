@@ -34,6 +34,7 @@ class Job:
     num_gpus: Optional[int] = None
     pids: Dict[Node, int] = field(default_factory=dict)
     executor: Executor = field(default_factory=Executor.TORCHRUN)
+    docker_image: Optional[str] = None  # docker image
 
     @classmethod
     def from_db(cls, row: Tuple) -> "Job":
@@ -54,10 +55,11 @@ class Job:
             nodes=nodes,
             cluster=row[5],
             command=row[6],
-            max_restarts=row[7],
-            num_gpus=row[8],
+            max_restarts=int(row[7]),
+            num_gpus=int(row[8]) if row[8] else None,
             pids=pids,
             executor=Executor(row[10]),
+            image=row[11] or None,
         )
 
     def to_db(self) -> Tuple:
@@ -70,9 +72,10 @@ class Job:
             self.cluster,
             self.command,
             self.max_restarts,
-            self.num_gpus,
+            self.num_gpus or "",
             ",".join([f"{k}:{v}" for k, v in self.pids.items()]),
             self.executor.value,
+            self.docker_image or "",
         )
 
     def get_executor(self):
@@ -104,6 +107,7 @@ class Job:
             f"max_restarts={self.max_restarts}, "
             f"num_gpus={self.num_gpus}, "
             f"pids={self.pids}, "
-            f"executor={self.executor}"
+            f"executor={self.executor}, "
+            f"docker_image={self.docker_image}"
             f")"
         )
