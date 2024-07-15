@@ -59,7 +59,7 @@ class Job:
             num_gpus=int(row[8]) if row[8] else None,
             pids=pids,
             executor=Executor(row[10]),
-            image=row[11] or None,
+            docker_image=row[11] or None,
         )
 
     def to_db(self) -> Tuple:

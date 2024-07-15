@@ -30,15 +30,16 @@ class JobManager:
                 max_restarts INTEGER DEFAULT 0,
                 num_gpus INTEGER DEFAULT NULL,
                 pids TEXT DEFAULT NULL,
-                executor TEXT DEFAULT NULL
+                executor TEXT DEFAULT NULL,
+                docker_image TEXT DEFAULT NULL
             )
         """)
 
     def add_job(self, job: Job):
         self.conn.execute(
             """
-            INSERT INTO jobs (id, name, status, working_dir, nodes, cluster, command, max_restarts, num_gpus, pids, executor)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO jobs (id, name, status, working_dir, nodes, cluster, command, max_restarts, num_gpus, pids, executor, docker_image)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             job.to_db(),
         )
