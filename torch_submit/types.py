@@ -2,8 +2,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-from torch_submit.executor import DockerDistributedExecutor
-
 from .cluster_config import Node
 
 
@@ -83,6 +81,7 @@ class Job:
     def get_executor(self):
         from .executor import (
             DistributedExecutor,
+            DockerDistributedExecutor,
             OptunaExecutor,
             TorchrunExecutor,
         )
