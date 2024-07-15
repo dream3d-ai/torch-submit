@@ -37,7 +37,7 @@ def create_cluster():
 
     # Worker nodes
     worker_nodes = []
-    while Confirm.ask("Add a worker node?"):
+    while Confirm.ask("Add a worker node?", default=False):
         worker_public_ip = Prompt.ask("Enter worker node public IP")
         worker_private_ip = Prompt.ask(
             "Enter worker node private IP (optional)", default=""
