@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
+from torch_submit.executor import DockerDistributedExecutor
+
 from .cluster_config import Node
 
 
@@ -85,10 +87,16 @@ class Job:
             TorchrunExecutor,
         )
 
-        if self.executor == Executor.TORCHRUN:
+        if self.executor == Executor.TORCHRUN and self.docker_image:
+            raise ValueError("Docker image is not supported for torchrun executor")
+        elif self.executor == Executor.TORCHRUN:
             return TorchrunExecutor(self)
+        elif self.executor == Executor.DISTRIBUTED and self.docker_image:
+            return DockerDistributedExecutor(self)
         elif self.executor == Executor.DISTRIBUTED:
             return DistributedExecutor(self)
+        elif self.executor == Executor.OPTUNA and self.docker_image:
+            raise ValueError("Docker image is not supported for optuna executor")
         elif self.executor == Executor.OPTUNA:
             return OptunaExecutor(self)
         else:

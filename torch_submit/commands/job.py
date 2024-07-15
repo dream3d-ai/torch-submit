@@ -39,6 +39,7 @@ def submit(
     ),
     tail: bool = typer.Option(False, help="Tail the logs after submitting the job"),
     executor: Executor = typer.Option(Executor.TORCHRUN, help="Executor to use"),
+    docker_image: Optional[str] = typer.Option(None, help="Docker image to use"),
 ):
     """Submit a new job to a specified cluster."""
     try:
@@ -79,6 +80,7 @@ def submit(
         max_restarts=max_restarts,
         num_gpus=num_gpus,
         executor=executor,
+        docker_image=docker_image,
     )
     console.print("Submitting job...")
     job_manager.add_job(job)
