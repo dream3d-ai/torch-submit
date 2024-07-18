@@ -4,7 +4,7 @@ import os
 import random
 import zipfile
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, Optional
 
 from fabric import Connection
 from invoke import UnexpectedExit
@@ -90,7 +90,7 @@ class BaseExecutor(ABC):
         self.cluster = ClusterConfig().get_cluster(self.job.cluster)
 
     @abstractmethod
-    def get_command(self, rank: int):
+    def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None):
         """
         Generate the command to be executed on the given node rank.
 
@@ -102,7 +102,7 @@ class BaseExecutor(ABC):
         """
         ...
 
-    def execute(self) -> Dict[Node, int]:
+    def execute(self, env_vars: Optional[Dict[str, str]] = None) -> Dict[Node, int]:
         """
         Execute the job command on each node in the cluster.
 
@@ -121,21 +121,21 @@ class BaseExecutor(ABC):
                 with NodeConnection(node) as conn:
                     self._setup_remote_env(conn)
                     self._copy_working_dir(conn)
-                    pids[node] = self._run_job(conn, rank)
+                    pids[node] = self._run_job(conn, rank, env_vars)
             except Exception:
                 console.print_exception()
                 console.print(f"Error executing job on node {node.public_ip}")
                 pids[node] = None
         return pids
-    
-    def _prepare_command(self, rank: int):
+
+    def _prepare_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None):
         return (
             f"cd {self.remote_dir} && "
-            f"{self.get_command(rank)} "
+            f"{self.get_command(rank, env_vars)} "
             f"{self.job.command}"
         )
 
-    def _run_job(self, conn: Connection, node_rank: int):
+    def _run_job(self, conn: Connection, node_rank: int, env_vars: Optional[Dict[str, str]] = None):
         """
         Run the job on the specified node.
 
@@ -153,7 +153,7 @@ class BaseExecutor(ABC):
         console.print(
             f"[bold blue]Running job on {conn.host} (rank {node_rank})...[/bold blue]"
         )
-        full_command = self._prepare_command(node_rank)
+        full_command = self._prepare_command(node_rank, env_vars)
         conn.run(
             f"{full_command} > {self.remote_dir}/output.log 2>&1 & "
             f"pid=$!; "
@@ -220,7 +220,7 @@ class DistributedExecutor(BaseExecutor):
         super().__init__(job)
         self.port = random.randint(29400, 29499)
 
-    def get_command(self, rank: int):
+    def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None):
         """
         Constructs the command to run the job with the torch distributed environment variables set.
 
@@ -240,6 +240,8 @@ class DistributedExecutor(BaseExecutor):
         world_size = 0
         for node in self.cluster.worker_nodes + [self.cluster.head_node]:
             world_size += node.num_gpus
+        
+        formatted_env_vars = " ".join(f"{k}={v}" for k, v in env_vars.items())
 
         return (
             f"MASTER_ADDR={ip} "
@@ -247,6 +249,7 @@ class DistributedExecutor(BaseExecutor):
             f"WORLD_SIZE={world_size} "
             f"NODE_RANK={rank} "
             f"LOCAL_WORLD_SIZE={self.cluster.worker_nodes[rank].num_gpus} "
+            f"{formatted_env_vars} "
         )
 
 
@@ -255,7 +258,7 @@ class TorchrunExecutor(BaseExecutor):
         super().__init__(job)
         self.port = random.randint(29400, 29499)
 
-    def get_command(self, rank: int):
+    def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None):
         """
         Constructs the command to run the job with torchrun.
 
@@ -287,7 +290,9 @@ class TorchrunExecutor(BaseExecutor):
                 nproc_per_node = self.cluster.worker_nodes[rank - 1].num_gpus
             else:
                 nproc_per_node = 1  # Default to 1 if no GPU information is available
-            omp_num_threads = self.cluster.worker_nodes[rank - 1].nproc // nproc_per_node
+            omp_num_threads = (
+                self.cluster.worker_nodes[rank - 1].nproc // nproc_per_node
+            )
 
         if len(self.cluster.worker_nodes) == 0:
             rdzv_endpoint = f"localhost:{self.port}"
@@ -296,8 +301,11 @@ class TorchrunExecutor(BaseExecutor):
             ip = head_node.private_ip or head_node.public_ip
             rdzv_endpoint = f"{ip}:{self.port}"
 
+        formatted_env_vars = " ".join(f"{k}={v}" for k, v in env_vars.items())
+
         return (
             f"OMP_NUM_THREADS={omp_num_threads} "
+            f"{formatted_env_vars} "
             f"nohup torchrun "
             f"--nnodes={nnodes} "
             f"--node_rank={rank} "
@@ -335,17 +343,21 @@ class OptunaExecutor(DistributedExecutor):
             conn.run(f"sqlite3 {self.remote_dir}/optuna.db")
             conn.run(f"sqlite_web mydatabase.db --host 0.0.0.0 --port {self.db_port}")
 
-    def get_command(self, rank: int):
+    def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None):
         if rank == 0:
             world_size = self.cluster.head_node.num_gpus
         else:
             world_size = self.cluster.worker_nodes[rank - 1].num_gpus
+        
+        formatted_env_vars = " ".join(f"{k}={v}" for k, v in env_vars.items())
+
         return (
             f"MASTER_ADDR=localhost "
             f"MASTER_PORT={self.port} "
             f"WORLD_SIZE={world_size} "
             f"NODE_RANK={rank} "
-            f"STUDY_NAME={self.job.name}"
+            f"STUDY_NAME={self.job.name} "
+            f"{formatted_env_vars} "
         )
 
     def execute(self) -> Dict[Node, int]:
@@ -381,7 +393,7 @@ class DockerDistributedExecutor(DistributedExecutor):
     def __init__(self, job: Job):
         super().__init__(job)
 
-    def get_command(self, rank: int):
+    def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None):
         """
         Constructs the command to run the job with the torch distributed environment variables set.
 
@@ -402,6 +414,8 @@ class DockerDistributedExecutor(DistributedExecutor):
         for node in self.cluster.worker_nodes + [self.cluster.head_node]:
             world_size += node.num_gpus
 
+        formatted_env_vars = " ".join(f"-e {k}={v}" for k, v in env_vars.items())
+
         return (
             "docker run --rm"
             "--gpus all --runtime=nvidia "
@@ -412,6 +426,7 @@ class DockerDistributedExecutor(DistributedExecutor):
             f"-e WORLD_SIZE={world_size} "
             f"-e NODE_RANK={rank} "
             f"-e LOCAL_WORLD_SIZE={self.cluster.worker_nodes[rank].num_gpus} "
+            f"{formatted_env_vars} "
             f"{self.job.docker_image} "
         )
 

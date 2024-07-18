@@ -3,6 +3,7 @@ import uuid
 from typing import List, Optional
 
 import typer
+import yaml
 from rich.console import Console
 from rich.table import Table
 
@@ -40,6 +41,7 @@ def submit(
     tail: bool = typer.Option(False, help="Tail the logs after submitting the job"),
     executor: Executor = typer.Option(Executor.TORCHRUN, help="Executor to use"),
     docker_image: Optional[str] = typer.Option(None, help="Docker image to use"),
+    runtime_env: Optional[str] = typer.Option(None, help="Runtime environment yaml file to use"),
 ):
     """Submit a new job to a specified cluster."""
     try:
@@ -61,6 +63,14 @@ def submit(
 
     job_id = str(uuid.uuid4())
     archiver = WorkingDirectoryArchiver(job_id=job_id, job_name=name)
+
+    if runtime_env:
+        console.print(f"Loading runtime environment variables from: [bold green]{runtime_env}[/bold green]")
+        with open(runtime_env, "r") as f:
+            runtime_env_vars = yaml.load(f, Loader=yaml.FullLoader)
+        assert all(isinstance(value, str) for value in runtime_env_vars.values()), "All values in runtime_env must be strings"
+    else:
+        runtime_env_vars = None
 
     console.print("Archiving working directory...")
     archived_dir = archiver.archive(working_dir)
@@ -86,7 +96,7 @@ def submit(
     job_manager.add_job(job)
 
     job_executor = job.get_executor()
-    pids = job_executor.execute()
+    pids = job_executor.execute(runtime_env_vars)
 
     if all(pid is None for pid in pids.values()):
         job_manager.update_job_status(job_id, JobStatus.CRASHED)

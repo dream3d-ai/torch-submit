@@ -3,10 +3,13 @@ import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Optional
 
+from rich.console import Console
+
 from .cluster_config import Node
 from .connection import NodeConnection
 from .types import Job, JobStatus
 
+console = Console()
 
 class JobManager:
     def __init__(
@@ -107,7 +110,8 @@ class JobManager:
                                 f"Unknown job status: {job.status} for node {node}, {result.stdout}"
                             )
 
-                except Exception:
+                except Exception as exc:
+                    console.print(f"Error checking node status: {exc}")
                     return JobStatus.UNKNOWN
 
             with ThreadPoolExecutor() as executor:
