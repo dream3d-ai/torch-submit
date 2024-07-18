@@ -279,7 +279,7 @@ class TorchrunExecutor(BaseExecutor):
                 nproc_per_node = self.cluster.head_node.num_gpus
             else:
                 nproc_per_node = 1  # Default to 1 if no GPU information is available
-            omp_num_threads = self.cluster.head.nproc // nproc_per_node
+            omp_num_threads = self.cluster.head_node.nproc // nproc_per_node
         else:  # Worker node
             if self.job.num_gpus is not None:
                 nproc_per_node = self.job.num_gpus
@@ -287,7 +287,7 @@ class TorchrunExecutor(BaseExecutor):
                 nproc_per_node = self.cluster.worker_nodes[rank - 1].num_gpus
             else:
                 nproc_per_node = 1  # Default to 1 if no GPU information is available
-            omp_num_threads = self.cluster.head.nproc // nproc_per_node
+            omp_num_threads = self.cluster.worker_nodes[rank - 1].nproc // nproc_per_node
 
         if len(self.cluster.worker_nodes) == 0:
             rdzv_endpoint = f"localhost:{self.port}"
