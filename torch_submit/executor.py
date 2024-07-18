@@ -131,7 +131,7 @@ class BaseExecutor(ABC):
     def _prepare_command(self, rank: int):
         return (
             f"cd {self.remote_dir} && "
-            f"nohup {self.get_command(rank)} "
+            f"{self.get_command(rank)} "
             f"{self.job.command}"
         )
 
@@ -298,7 +298,7 @@ class TorchrunExecutor(BaseExecutor):
 
         return (
             f"OMP_NUM_THREADS={omp_num_threads} "
-            f"torchrun "
+            f"nohup torchrun "
             f"--nnodes={nnodes} "
             f"--node_rank={rank} "
             f"--nproc-per-node={nproc_per_node} "
