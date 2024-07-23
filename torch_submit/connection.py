@@ -1,6 +1,6 @@
 from fabric import Connection
 
-from .cluster_config import Node
+from .config import Node
 
 
 class NodeConnection:

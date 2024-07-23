@@ -14,7 +14,7 @@
 
 ## delete_job
 
-[Show source in job.py:252](../../torch_submit/commands/job.py#L252)
+[Show source in job.py:273](../../torch_submit/commands/job.py#L273)
 
 Delete a job.
 
@@ -33,7 +33,7 @@ def delete_job(
 
 ## list_jobs
 
-[Show source in job.py:150](../../torch_submit/commands/job.py#L150)
+[Show source in job.py:171](../../torch_submit/commands/job.py#L171)
 
 List all submitted jobs.
 
@@ -48,7 +48,7 @@ def list_jobs(): ...
 
 ## print_logs
 
-[Show source in job.py:127](../../torch_submit/commands/job.py#L127)
+[Show source in job.py:148](../../torch_submit/commands/job.py#L148)
 
 Tail the logs of a specific job.
 
@@ -66,7 +66,7 @@ def print_logs(
 
 ## restart_job
 
-[Show source in job.py:207](../../torch_submit/commands/job.py#L207)
+[Show source in job.py:228](../../torch_submit/commands/job.py#L228)
 
 Restart a stopped job.
 
@@ -81,7 +81,7 @@ def restart_job(job_id: str = typer.Argument(..., help="Job ID or name")): ...
 
 ## stop_job
 
-[Show source in job.py:182](../../torch_submit/commands/job.py#L182)
+[Show source in job.py:203](../../torch_submit/commands/job.py#L203)
 
 Stop a running job.
 
@@ -96,7 +96,7 @@ def stop_job(job_id: str = typer.Argument(..., help="Job ID or name")): ...
 
 ## submit
 
-[Show source in job.py:26](../../torch_submit/commands/job.py#L26)
+[Show source in job.py:27](../../torch_submit/commands/job.py#L27)
 
 Submit a new job to a specified cluster.
 
@@ -120,6 +120,7 @@ def submit(
     tail: bool = typer.Option(False, help="Tail the logs after submitting the job"),
     executor: Executor = typer.Option(Executor.TORCHRUN, help="Executor to use"),
     docker_image: Optional[str] = typer.Option(None, help="Docker image to use"),
+    database: Optional[str] = typer.Option(None, help="Database to use"),
     runtime_env: Optional[str] = typer.Option(
         None, help="Runtime environment yaml file to use"
     ),

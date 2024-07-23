@@ -4,11 +4,11 @@ from rich.console import Console
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
-from ..cluster_config import ClusterConfig, Node
+from ..config import Config, Node
 
 app = typer.Typer()
 console = Console()
-cluster_config = ClusterConfig()
+config = Config()
 
 
 @app.command("create")
@@ -65,14 +65,14 @@ def create_cluster():
         )
         worker_nodes.append(worker_node)
 
-    cluster_config.add_cluster(name, head_node, worker_nodes)
+    config.add_cluster(name, head_node, worker_nodes)
     console.print(f"Cluster [bold green]{name}[/bold green] created successfully.")
 
 
 @app.command("list")
 def list_clusters():
     """List all available clusters."""
-    clusters = cluster_config.list_clusters()
+    clusters = config.list_clusters()
 
     table = Table(title="Available Clusters", box=box.ROUNDED)
     table.add_column("Cluster Name", style="cyan")
@@ -82,7 +82,7 @@ def list_clusters():
     table.add_column("Total Processes", style="blue")
 
     for cluster_name in clusters:
-        cluster = cluster_config.get_cluster(cluster_name)
+        cluster = config.get_cluster(cluster_name)
         total_gpus = cluster.head_node.num_gpus + sum(
             node.num_gpus for node in cluster.worker_nodes
         )
@@ -104,7 +104,7 @@ def list_clusters():
 def remove_cluster(name: str):
     """Remove a cluster configuration."""
     if Confirm.ask(f"Are you sure you want to remove cluster '{name}'?"):
-        cluster_config.remove_cluster(name)
+        config.remove_cluster(name)
         console.print(f"Cluster [bold red]{name}[/bold red] removed.")
     else:
         console.print("Cluster removal cancelled.")
@@ -114,7 +114,7 @@ def remove_cluster(name: str):
 def edit_cluster(name: str):
     """Edit an existing cluster configuration."""
     try:
-        cluster = cluster_config.get_cluster(name)
+        cluster = config.get_cluster(name)
     except ValueError:
         console.print(f"[bold red]Error:[/bold red] Cluster '{name}' not found.")
         raise typer.Exit(code=1)
@@ -148,5 +148,5 @@ def edit_cluster(name: str):
             break
 
     # Update the cluster configuration
-    cluster_config.update_cluster(name, head_node, worker_nodes)
+    config.update_cluster(name, head_node, worker_nodes)
     console.print(f"Cluster [bold green]{name}[/bold green] updated successfully.")

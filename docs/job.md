@@ -164,7 +164,7 @@ def update_job_pids(self, job_id: str, pids: Dict[Node, int]): ...
 
 #### See also
 
-- [Node](./cluster_config.md#node)
+- [Node](./config.md#node)
 
 ### JobManager().update_job_status
 

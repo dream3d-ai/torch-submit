@@ -2,9 +2,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-from torch_submit.db_config import Database
-
-from .cluster_config import Node
+from .config import Database, Node
 
 
 class Executor(str, Enum):
@@ -36,7 +34,7 @@ class Job:
     num_gpus: Optional[int] = None
     pids: Dict[Node, int] = field(default_factory=dict)
     executor: Executor = field(default_factory=Executor.TORCHRUN)
-    docker_image: Optional[str] = None  # docker image
+    docker_image: Optional[str] = None
     database: Optional[Database] = None
 
     @classmethod

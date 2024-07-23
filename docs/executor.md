@@ -20,7 +20,6 @@
   - [OptunaExecutor](#optunaexecutor)
     - [OptunaExecutor().execute](#optunaexecutor()execute)
     - [OptunaExecutor().get_command](#optunaexecutor()get_command)
-    - [OptunaExecutor().setup_db](#optunaexecutor()setup_db)
   - [TorchrunExecutor](#torchrunexecutor)
     - [TorchrunExecutor().get_command](#torchrunexecutor()get_command)
   - [WorkingDirectoryArchiver](#workingdirectoryarchiver)
@@ -82,7 +81,7 @@ def _run_job(
 
 ### BaseExecutor().cleanup
 
-[Show source in executor.py:186](../torch_submit/executor.py#L186)
+[Show source in executor.py:191](../torch_submit/executor.py#L191)
 
 Clean up the remote directories on all nodes.
 
@@ -117,7 +116,7 @@ def execute(self, env_vars: Optional[Dict[str, str]] = None) -> Dict[Node, int]:
 
 #### See also
 
-- [Node](./cluster_config.md#node)
+- [Node](./config.md#node)
 
 ### BaseExecutor().get_command
 
@@ -144,7 +143,7 @@ def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None): ...
 
 ## DistributedExecutor
 
-[Show source in executor.py:203](../torch_submit/executor.py#L203)
+[Show source in executor.py:208](../torch_submit/executor.py#L208)
 
 The DistributedExecutor is responsible for setting up the environment for running
 distributed PyTorch jobs. It ensures that the necessary environment variables are set
@@ -173,7 +172,7 @@ class DistributedExecutor(BaseExecutor):
 
 ### DistributedExecutor().get_command
 
-[Show source in executor.py:223](../torch_submit/executor.py#L223)
+[Show source in executor.py:228](../torch_submit/executor.py#L228)
 
 Constructs the command to run the job with the torch distributed environment variables set.
 
@@ -295,7 +294,7 @@ def submit_job(job: Job): ...
 
 ## OptunaExecutor
 
-[Show source in executor.py:321](../torch_submit/executor.py#L321)
+[Show source in executor.py:326](../torch_submit/executor.py#L326)
 
 The OptunaExecutor sets up and manages the execution of Optuna distributed optimization jobs.
 
@@ -308,6 +307,7 @@ Exposes the following environment variables to the user script:
     - WORLD_SIZE: The total number of processes participating in the job.
     - NODE_RANK: The rank of the current node.
     - STUDY_NAME: The name of the Optuna study (the job name).
+    - DATABASE_URI: The URI of the database.
 
 #### Signature
 
@@ -343,11 +343,11 @@ def execute(self) -> Dict[Node, int]: ...
 
 #### See also
 
-- [Node](./cluster_config.md#node)
+- [Node](./config.md#node)
 
 ### OptunaExecutor().get_command
 
-[Show source in executor.py:346](../torch_submit/executor.py#L346)
+[Show source in executor.py:345](../torch_submit/executor.py#L345)
 
 #### Signature
 
@@ -355,21 +355,11 @@ def execute(self) -> Dict[Node, int]: ...
 def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None): ...
 ```
 
-### OptunaExecutor().setup_db
-
-[Show source in executor.py:340](../torch_submit/executor.py#L340)
-
-#### Signature
-
-```python
-def setup_db(self) -> int: ...
-```
-
 
 
 ## TorchrunExecutor
 
-[Show source in executor.py:256](../torch_submit/executor.py#L256)
+[Show source in executor.py:261](../torch_submit/executor.py#L261)
 
 #### Signature
 
@@ -385,7 +375,7 @@ class TorchrunExecutor(BaseExecutor):
 
 ### TorchrunExecutor().get_command
 
-[Show source in executor.py:261](../torch_submit/executor.py#L261)
+[Show source in executor.py:266](../torch_submit/executor.py#L266)
 
 Constructs the command to run the job with torchrun.
 

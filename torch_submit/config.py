@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from enum import Enum
 from typing import Dict, List, Optional
 
 import yaml
@@ -18,6 +19,8 @@ class Node:
         self.private_ip = self.private_ip or None
         self.ssh_user = self.ssh_user or None
         self.ssh_pub_key_path = self.ssh_pub_key_path or None
+        self.num_gpus = int(self.num_gpus)
+        self.nproc = int(self.nproc)
 
     @classmethod
     def from_db(cls, row: str):
@@ -54,10 +57,69 @@ class Cluster:
     worker_nodes: List[Node]
 
 
-class ClusterConfig:
+class DatabaseType(str, Enum):
+    POSTGRES = "postgres"
+    MYSQL = "mysql"
+
+
+@dataclass
+class Database:
+    address: str
+    port: int
+    username: str
+    password: str | None = None
+    type: DatabaseType = DatabaseType.POSTGRES
+
+    def __post_init__(self):
+        self.port = int(self.port)
+        self.type = DatabaseType(self.type)
+
+    @classmethod
+    def from_db(cls, row: str):
+        address, port, username, password, type = row.split(":")
+        return cls(
+            address,
+            int(port),
+            username,
+            password or None,
+            DatabaseType(type),
+        )
+
+    def to_uri(self):
+        return (
+            f"{self.type}://{self.username}:{self.password}@{self.address}:{self.port}"
+        )
+
+    def to_db(self):
+        return f"{self.address}:{self.port}:{self.username}:{self.password or ''}:{self.type.value}"
+
+    def __str__(self):
+        return f"Database(type={self.type}, address={self.address}, port={self.port}, username={self.username}, password=****)"
+
+    def __hash__(self):
+        return (
+            hash(self.type)
+            + hash(self.address)
+            + hash(self.port)
+            + hash(self.username)
+            + hash(self.password)
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, Database):
+            return NotImplemented
+        return (
+            self.address == other.address
+            and self.port == other.port
+            and self.type == other.type
+        )
+
+
+class Config:
     def __init__(self):
         self.config_path = os.path.expanduser("~/.cache/torch-submit/config.yaml")
         self.clusters: Dict[str, Cluster] = {}
+        self.databases: Dict[str, Database] = {}
         self.load_config()
 
     def load_config(self):
@@ -72,9 +134,14 @@ class ClusterConfig:
             worker_nodes = [Node(**node) for node in cluster_data["worker_nodes"]]
             self.clusters[cluster_name] = Cluster(head_node, worker_nodes)
 
+        for database_name, database_data in config.get("databases", {}).items():
+            database = Database(**database_data)
+            self.databases[database_name] = database
+
     def save_config(self):
         os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
-        config = {"clusters": {}}
+        config = {"clusters": {}, "databases": {}}
+
         for cluster_name, cluster in self.clusters.items():
             config["clusters"][cluster_name] = {
                 "head_node": {
@@ -97,9 +164,20 @@ class ClusterConfig:
                     for node in cluster.worker_nodes
                 ],
             }
+
+        for database_name, database in self.databases.items():
+            config["databases"][database_name] = {
+                "address": database.address,
+                "port": database.port,
+                "username": database.username,
+                "password": database.password,
+                "type": database.type.value,
+            }
+
         with open(self.config_path, "w") as f:
             yaml.dump(config, f)
 
+    # Cluster methods
     def add_cluster(self, name: str, head_node: Node, worker_nodes: List[Node]):
         self.clusters[name] = Cluster(head_node, worker_nodes)
         self.save_config()
@@ -137,4 +215,48 @@ class ClusterConfig:
         if name not in self.clusters:
             raise ValueError(f"Cluster '{name}' not found in config")
         self.clusters[name] = Cluster(head_node, worker_nodes)
+        self.save_config()
+
+    # Database methods
+    def add_db(
+        self,
+        type: DatabaseType,
+        name: str,
+        address: str,
+        port: int,
+        username: str,
+        password: str,
+    ):
+        self.databases[name] = Database(
+            address, port, username, password, type
+        )
+        self.save_config()
+
+    def remove_db(self, name: str):
+        if name in self.databases:
+            del self.databases[name]
+            self.save_config()
+
+    def get_db(self, db_name: str) -> Database:
+        if db_name not in self.databases:
+            raise ValueError(f"Database '{db_name}' not found in config")
+        return self.databases[db_name]
+
+    def list_dbs(self) -> List[str]:
+        return list(self.databases.keys())
+
+    def update_db(
+        self,
+        type: str,
+        name: str,
+        address: str,
+        port: int,
+        username: str,
+        password: str,
+    ):
+        if name not in self.databases:
+            raise ValueError(f"Database '{name}' not found in config")
+        self.databases[name] = Database(
+            address, port, username, password, type
+        )
         self.save_config()

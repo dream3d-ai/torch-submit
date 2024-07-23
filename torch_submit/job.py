@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 
 from rich.console import Console
 
-from .cluster_config import Node
+from .config import Node
 from .connection import NodeConnection
 from .types import Job, JobStatus
 

@@ -10,7 +10,7 @@ from fabric import Connection
 from invoke import UnexpectedExit
 from rich.console import Console
 
-from .cluster_config import ClusterConfig, Node
+from .config import Config, Node
 from .connection import NodeConnection
 from .types import Job
 
@@ -87,7 +87,7 @@ class BaseExecutor(ABC):
     def __init__(self, job: Job):
         self.job = job
         self.remote_dir = f"/tmp/torch_submit_job_{self.job.id}"
-        self.cluster = ClusterConfig().get_cluster(self.job.cluster)
+        self.cluster = Config().get_cluster(self.job.cluster)
 
     @abstractmethod
     def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None):

@@ -36,7 +36,7 @@ class Job: ...
 
 ### Job.from_db
 
-[Show source in types.py:39](../torch_submit/types.py#L39)
+[Show source in types.py:40](../torch_submit/types.py#L40)
 
 #### Signature
 
@@ -47,7 +47,7 @@ def from_db(cls, row: Tuple) -> "Job": ...
 
 ### Job().get_executor
 
-[Show source in types.py:81](../torch_submit/types.py#L81)
+[Show source in types.py:84](../torch_submit/types.py#L84)
 
 #### Signature
 
@@ -57,7 +57,7 @@ def get_executor(self): ...
 
 ### Job().to_db
 
-[Show source in types.py:65](../torch_submit/types.py#L65)
+[Show source in types.py:67](../torch_submit/types.py#L67)
 
 #### Signature
 

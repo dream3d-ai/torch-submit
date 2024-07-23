@@ -7,9 +7,8 @@ import yaml
 from rich.console import Console
 from rich.table import Table
 
-from ..cluster_config import ClusterConfig
+from ..config import Config
 from ..connection import NodeConnection
-from ..db_config import DatabaseConfig
 from ..executor import (
     BaseExecutor,
     WorkingDirectoryArchiver,
@@ -20,9 +19,9 @@ from ..utils import generate_friendly_name
 
 app = typer.Typer()
 console = Console()
-cluster_config = ClusterConfig()
+config = Config()
 job_manager = JobManager()
-db_config = DatabaseConfig()
+config = Config()
 
 
 @app.command("submit")
@@ -56,13 +55,13 @@ def submit(
             )
             raise typer.Exit(code=1)
         try:
-            db_config.get_db(database)
+            config.get_db(database)
         except ValueError:
             console.print(f"Could not find database {database}")
             raise typer.Exit(code=1)
 
     try:
-        cluster_info = cluster_config.get_cluster(cluster)
+        cluster_info = config.get_cluster(cluster)
     except ValueError as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
         raise typer.Exit(code=1)
@@ -245,7 +244,7 @@ def restart_job(job_id: str = typer.Argument(..., help="Job ID or name")):
     console.print(f"Restarting job [bold yellow]{job_id}[/bold yellow]")
 
     try:
-        cluster = cluster_config.get_cluster(job.cluster)
+        cluster = config.get_cluster(job.cluster)
         script_name = job.command.split()[-1]
         script_path = os.path.join(f"/tmp/torch_submit_job_{job.id}", script_name)
 

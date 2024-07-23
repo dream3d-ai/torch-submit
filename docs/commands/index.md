@@ -10,4 +10,5 @@
 ## Modules
 
 - [Cluster](./cluster.md)
+- [Database](./database.md)
 - [Job](./job.md)

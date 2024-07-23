@@ -20,4 +20,4 @@ class NodeConnection:
 
 #### See also
 
-- [Node](./cluster_config.md#node)
+- [Node](./config.md#node)

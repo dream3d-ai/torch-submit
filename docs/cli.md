@@ -10,7 +10,7 @@
 
 ## main
 
-[Show source in cli.py:19](../torch_submit/cli.py#L19)
+[Show source in cli.py:20](../torch_submit/cli.py#L20)
 
 #### Signature
 
@@ -31,7 +31,7 @@ def main(
 
 ## version_callback
 
-[Show source in cli.py:13](../torch_submit/cli.py#L13)
+[Show source in cli.py:14](../torch_submit/cli.py#L14)
 
 #### Signature
 
