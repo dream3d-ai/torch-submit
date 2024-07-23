@@ -306,7 +306,7 @@ class TorchrunExecutor(BaseExecutor):
         return (
             f"OMP_NUM_THREADS={omp_num_threads} "
             f"{formatted_env_vars} "
-            f"nohup torchrun "
+            f"nohup ~/.local/bin/torchrun "
             f"--nnodes={nnodes} "
             f"--node_rank={rank} "
             f"--nproc-per-node={nproc_per_node} "
