@@ -21,7 +21,7 @@
 
 ## JobManager
 
-[Show source in job.py:11](../torch_submit/job.py#L11)
+[Show source in job.py:14](../torch_submit/job.py#L14)
 
 #### Signature
 
@@ -34,7 +34,7 @@ class JobManager:
 
 ### JobManager().add_job
 
-[Show source in job.py:37](../torch_submit/job.py#L37)
+[Show source in job.py:41](../torch_submit/job.py#L41)
 
 #### Signature
 
@@ -48,7 +48,7 @@ def add_job(self, job: Job): ...
 
 ### JobManager().check_job_status
 
-[Show source in job.py:66](../torch_submit/job.py#L66)
+[Show source in job.py:70](../torch_submit/job.py#L70)
 
 #### Signature
 
@@ -62,7 +62,7 @@ def check_job_status(self, job: Job) -> str: ...
 
 ### JobManager().close
 
-[Show source in job.py:171](../torch_submit/job.py#L171)
+[Show source in job.py:176](../torch_submit/job.py#L176)
 
 #### Signature
 
@@ -72,7 +72,7 @@ def close(self): ...
 
 ### JobManager().create_table
 
-[Show source in job.py:20](../torch_submit/job.py#L20)
+[Show source in job.py:23](../torch_submit/job.py#L23)
 
 #### Signature
 
@@ -82,7 +82,7 @@ def create_table(self): ...
 
 ### JobManager().delete_all_jobs
 
-[Show source in job.py:167](../torch_submit/job.py#L167)
+[Show source in job.py:172](../torch_submit/job.py#L172)
 
 #### Signature
 
@@ -92,7 +92,7 @@ def delete_all_jobs(self): ...
 
 ### JobManager().delete_job
 
-[Show source in job.py:163](../torch_submit/job.py#L163)
+[Show source in job.py:168](../torch_submit/job.py#L168)
 
 #### Signature
 
@@ -102,7 +102,7 @@ def delete_job(self, job_id: str): ...
 
 ### JobManager().get_all_jobs_with_status
 
-[Show source in job.py:131](../torch_submit/job.py#L131)
+[Show source in job.py:136](../torch_submit/job.py#L136)
 
 #### Signature
 
@@ -116,7 +116,7 @@ def get_all_jobs_with_status(self) -> List[Job]: ...
 
 ### JobManager().get_job
 
-[Show source in job.py:47](../torch_submit/job.py#L47)
+[Show source in job.py:51](../torch_submit/job.py#L51)
 
 #### Signature
 
@@ -130,7 +130,7 @@ def get_job(self, job_id_or_name: str) -> Optional[Job]: ...
 
 ### JobManager().list_jobs
 
-[Show source in job.py:62](../torch_submit/job.py#L62)
+[Show source in job.py:66](../torch_submit/job.py#L66)
 
 #### Signature
 
@@ -144,7 +144,7 @@ def list_jobs(self) -> List[Job]: ...
 
 ### JobManager().migrate_table
 
-[Show source in job.py:174](../torch_submit/job.py#L174)
+[Show source in job.py:179](../torch_submit/job.py#L179)
 
 #### Signature
 
@@ -154,7 +154,7 @@ def migrate_table(self): ...
 
 ### JobManager().update_job_pids
 
-[Show source in job.py:153](../torch_submit/job.py#L153)
+[Show source in job.py:158](../torch_submit/job.py#L158)
 
 #### Signature
 
@@ -168,7 +168,7 @@ def update_job_pids(self, job_id: str, pids: Dict[Node, int]): ...
 
 ### JobManager().update_job_status
 
-[Show source in job.py:145](../torch_submit/job.py#L145)
+[Show source in job.py:150](../torch_submit/job.py#L150)
 
 #### Signature
 

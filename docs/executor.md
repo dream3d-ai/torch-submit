@@ -75,7 +75,9 @@ along with the job command, and captures the process ID of the running job.
 #### Signature
 
 ```python
-def _run_job(self, conn: Connection, node_rank: int): ...
+def _run_job(
+    self, conn: Connection, node_rank: int, env_vars: Optional[Dict[str, str]] = None
+): ...
 ```
 
 ### BaseExecutor().cleanup
@@ -110,7 +112,7 @@ and execution process, handling any exceptions that occur during execution.
 #### Signature
 
 ```python
-def execute(self) -> Dict[Node, int]: ...
+def execute(self, env_vars: Optional[Dict[str, str]] = None) -> Dict[Node, int]: ...
 ```
 
 #### See also
@@ -135,7 +137,7 @@ Generate the command to be executed on the given node rank.
 
 ```python
 @abstractmethod
-def get_command(self, rank: int): ...
+def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None): ...
 ```
 
 
@@ -155,6 +157,7 @@ Exposes the following environment variables to the user script:
     - MASTER_PORT: The port on which the master node is listening.
     - WORLD_SIZE: The total number of processes participating in the job.
     - NODE_RANK: The rank of the current node.
+    - LOCAL_WORLD_SIZE: The number of processes on the current node.
 
 #### Signature
 
@@ -170,7 +173,7 @@ class DistributedExecutor(BaseExecutor):
 
 ### DistributedExecutor().get_command
 
-[Show source in executor.py:222](../torch_submit/executor.py#L222)
+[Show source in executor.py:223](../torch_submit/executor.py#L223)
 
 Constructs the command to run the job with the torch distributed environment variables set.
 
@@ -189,14 +192,14 @@ to these environment variables.
 #### Signature
 
 ```python
-def get_command(self, rank: int): ...
+def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None): ...
 ```
 
 
 
 ## DockerDistributedExecutor
 
-[Show source in executor.py:353](../torch_submit/executor.py#L353)
+[Show source in executor.py:378](../torch_submit/executor.py#L378)
 
 EXPERIMENTAL:
 DockerDistributedExecutor is an executor that runs distributed jobs inside Docker containers.
@@ -224,7 +227,7 @@ class DockerDistributedExecutor(DistributedExecutor):
 
 ### DockerDistributedExecutor().get_command
 
-[Show source in executor.py:371](../torch_submit/executor.py#L371)
+[Show source in executor.py:396](../torch_submit/executor.py#L396)
 
 Constructs the command to run the job with the torch distributed environment variables set.
 
@@ -243,14 +246,14 @@ to these environment variables.
 #### Signature
 
 ```python
-def get_command(self, rank: int): ...
+def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None): ...
 ```
 
 
 
 ## JobExecutionManager
 
-[Show source in executor.py:407](../torch_submit/executor.py#L407)
+[Show source in executor.py:437](../torch_submit/executor.py#L437)
 
 #### Signature
 
@@ -260,7 +263,7 @@ class JobExecutionManager: ...
 
 ### JobExecutionManager.cancel_job
 
-[Show source in executor.py:422](../torch_submit/executor.py#L422)
+[Show source in executor.py:452](../torch_submit/executor.py#L452)
 
 #### Signature
 
@@ -275,7 +278,7 @@ def cancel_job(job: Job): ...
 
 ### JobExecutionManager.submit_job
 
-[Show source in executor.py:408](../torch_submit/executor.py#L408)
+[Show source in executor.py:438](../torch_submit/executor.py#L438)
 
 #### Signature
 
@@ -292,7 +295,7 @@ def submit_job(job: Job): ...
 
 ## OptunaExecutor
 
-[Show source in executor.py:300](../torch_submit/executor.py#L300)
+[Show source in executor.py:321](../torch_submit/executor.py#L321)
 
 The OptunaExecutor sets up and manages the execution of Optuna distributed optimization jobs.
 
@@ -320,7 +323,7 @@ class OptunaExecutor(DistributedExecutor):
 
 ### OptunaExecutor().execute
 
-[Show source in executor.py:338](../torch_submit/executor.py#L338)
+[Show source in executor.py:363](../torch_submit/executor.py#L363)
 
 Set up the database on the head node and then run the DistributedExecutor execute method.
 
@@ -344,17 +347,17 @@ def execute(self) -> Dict[Node, int]: ...
 
 ### OptunaExecutor().get_command
 
-[Show source in executor.py:325](../torch_submit/executor.py#L325)
+[Show source in executor.py:346](../torch_submit/executor.py#L346)
 
 #### Signature
 
 ```python
-def get_command(self, rank: int): ...
+def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None): ...
 ```
 
 ### OptunaExecutor().setup_db
 
-[Show source in executor.py:319](../torch_submit/executor.py#L319)
+[Show source in executor.py:340](../torch_submit/executor.py#L340)
 
 #### Signature
 
@@ -366,7 +369,7 @@ def setup_db(self) -> int: ...
 
 ## TorchrunExecutor
 
-[Show source in executor.py:251](../torch_submit/executor.py#L251)
+[Show source in executor.py:256](../torch_submit/executor.py#L256)
 
 #### Signature
 
@@ -382,7 +385,7 @@ class TorchrunExecutor(BaseExecutor):
 
 ### TorchrunExecutor().get_command
 
-[Show source in executor.py:256](../torch_submit/executor.py#L256)
+[Show source in executor.py:261](../torch_submit/executor.py#L261)
 
 Constructs the command to run the job with torchrun.
 
@@ -401,7 +404,7 @@ the rendezvous endpoint, the job ID, and the maximum number of restarts.
 #### Signature
 
 ```python
-def get_command(self, rank: int): ...
+def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None): ...
 ```
 
 
