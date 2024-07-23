@@ -2,12 +2,13 @@ from importlib.metadata import version
 
 import typer
 
-from .commands import cluster, job
+from .commands import cluster, database, job
 
 app = typer.Typer()
 
 app.add_typer(cluster.app, name="cluster")
 app.add_typer(job.app, name="job")
+app.add_typer(database.app, name="db")
 
 
 def version_callback(value: bool):
