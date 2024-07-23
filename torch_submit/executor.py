@@ -135,7 +135,12 @@ class BaseExecutor(ABC):
             f"{self.job.command}"
         )
 
-    def _run_job(self, conn: Connection, node_rank: int, env_vars: Optional[Dict[str, str]] = None):
+    def _run_job(
+        self,
+        conn: Connection,
+        node_rank: int,
+        env_vars: Optional[Dict[str, str]] = None,
+    ):
         """
         Run the job on the specified node.
 
@@ -240,7 +245,7 @@ class DistributedExecutor(BaseExecutor):
         world_size = 0
         for node in self.cluster.worker_nodes + [self.cluster.head_node]:
             world_size += node.num_gpus
-        
+
         formatted_env_vars = " ".join(f"{k}={v}" for k, v in env_vars.items())
 
         return (
@@ -331,24 +336,18 @@ class OptunaExecutor(DistributedExecutor):
         - WORLD_SIZE: The total number of processes participating in the job.
         - NODE_RANK: The rank of the current node.
         - STUDY_NAME: The name of the Optuna study (the job name).
+        - DATABASE_URI: The URI of the database.
     """
 
     def __init__(self, job: Job):
         super().__init__(job)
-        self.db_port = random.randint(8001, 8999)
-
-    def setup_db(self) -> int:
-        with NodeConnection(self.cluster.head_node) as conn:
-            conn.run("pip install sqlite-web")
-            conn.run(f"sqlite3 {self.remote_dir}/optuna.db")
-            conn.run(f"sqlite_web mydatabase.db --host 0.0.0.0 --port {self.db_port}")
 
     def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None):
         if rank == 0:
             world_size = self.cluster.head_node.num_gpus
         else:
             world_size = self.cluster.worker_nodes[rank - 1].num_gpus
-        
+
         formatted_env_vars = " ".join(f"{k}={v}" for k, v in env_vars.items())
 
         return (
@@ -356,7 +355,8 @@ class OptunaExecutor(DistributedExecutor):
             f"MASTER_PORT={self.port} "
             f"WORLD_SIZE={world_size} "
             f"NODE_RANK={rank} "
-            f"STUDY_NAME={self.job.name} "
+            f"OPTUNA_STUDY_NAME={self.job.name} "
+            f"OPTUNA_STORAGE={self.job.database.to_uri()} "
             f"{formatted_env_vars} "
         )
 

@@ -1,36 +1,57 @@
 import os
 from dataclasses import dataclass
+from enum import Enum
 from typing import Dict, List
 
 import yaml
+
+
+class DatabaseType(str, Enum):
+    POSTGRES = "postgres"
+    MYSQL = "mysql"
 
 
 @dataclass
 class Database:
     address: str
     port: int
+    username: str
+    password: str | None = None
+    type: DatabaseType = DatabaseType.POSTGRES
 
     @classmethod
     def from_db(cls, row: str):
-        address, port = row.split(":")
+        address, port, username, password, type = row.split(":")
         return cls(
             address,
             int(port),
+            username,
+            password or None,
+            DatabaseType(type),
         )
 
+    def to_uri(self):
+        return f"{self.type}://{self.username}:{self.password}@{self.address}:{self.port}"
+
     def to_db(self):
-        return f"{self.address}:{self.port}"
+        return f"{self.address}:{self.port}:{self.username}:{self.password or ''}:{self.type.value}"
 
     def __str__(self):
-        return f"Database(address={self.address}, port={self.port})"
+        return f"Database(type={self.type}, address={self.address}, port={self.port}, username={self.username}, password=****)"
 
     def __hash__(self):
-        return hash(self.address) + hash(self.port)
+        return (
+            hash(self.type)
+            + hash(self.address)
+            + hash(self.port)
+            + hash(self.username)
+            + hash(self.password)
+        )
 
     def __eq__(self, other):
         if not isinstance(other, Database):
             return NotImplemented
-        return self.address == other.address and self.port == other.port
+        return self.address == other.address and self.port == other.port and self.type == other.type
 
 
 class DatabaseConfig:
@@ -57,12 +78,14 @@ class DatabaseConfig:
             config["databases"][database_name] = {
                 "address": database.address,
                 "port": database.port,
+                "username": database.username,
+                "password": database.password,
             }
         with open(self.config_path, "w") as f:
             yaml.dump(config, f)
 
-    def add_db(self, name: str, address: str, port: int):
-        self.databases[name] = Database(address, port)
+    def add_db(self, type: DatabaseType, name: str, address: str, port: int):
+        self.databases[name] = Database(address, port, type=type)
         self.save_config()
 
     def remove_db(self, name: str):
@@ -78,8 +101,10 @@ class DatabaseConfig:
     def list_dbs(self) -> List[str]:
         return list(self.databases.keys())
 
-    def update_db(self, name: str, address: str, port: int):
+    def update_db(
+        self, type: str, name: str, address: str, port: int, username: str, password: str
+    ):
         if name not in self.databases:
             raise ValueError(f"Database '{name}' not found in config")
-        self.databases[name] = Database(address, port)
+        self.databases[name] = Database(address, port, username, password, DatabaseType(type))
         self.save_config()

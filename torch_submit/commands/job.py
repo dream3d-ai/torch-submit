@@ -9,6 +9,7 @@ from rich.table import Table
 
 from ..cluster_config import ClusterConfig
 from ..connection import NodeConnection
+from ..db_config import DatabaseConfig
 from ..executor import (
     BaseExecutor,
     WorkingDirectoryArchiver,
@@ -21,6 +22,7 @@ app = typer.Typer()
 console = Console()
 cluster_config = ClusterConfig()
 job_manager = JobManager()
+db_config = DatabaseConfig()
 
 
 @app.command("submit")
@@ -41,9 +43,24 @@ def submit(
     tail: bool = typer.Option(False, help="Tail the logs after submitting the job"),
     executor: Executor = typer.Option(Executor.TORCHRUN, help="Executor to use"),
     docker_image: Optional[str] = typer.Option(None, help="Docker image to use"),
-    runtime_env: Optional[str] = typer.Option(None, help="Runtime environment yaml file to use"),
+    database: Optional[str] = typer.Option(None, help="Database to use"),
+    runtime_env: Optional[str] = typer.Option(
+        None, help="Runtime environment yaml file to use"
+    ),
 ):
     """Submit a new job to a specified cluster."""
+    if executor == Executor.OPTUNA:
+        if not database:
+            console.print(
+                "[bold red]Error:[/bold red] Database is required for optuna executor"
+            )
+            raise typer.Exit(code=1)
+        try:
+            db_config.get_db(database)
+        except ValueError:
+            console.print(f"Could not find database {database}")
+            raise typer.Exit(code=1)
+
     try:
         cluster_info = cluster_config.get_cluster(cluster)
     except ValueError as e:
@@ -65,10 +82,14 @@ def submit(
     archiver = WorkingDirectoryArchiver(job_id=job_id, job_name=name)
 
     if runtime_env:
-        console.print(f"Loading runtime environment variables from: [bold green]{runtime_env}[/bold green]")
+        console.print(
+            f"Loading runtime environment variables from: [bold green]{runtime_env}[/bold green]"
+        )
         with open(runtime_env, "r") as f:
             runtime_env_vars = yaml.load(f, Loader=yaml.FullLoader)
-        assert all(isinstance(value, str) for value in runtime_env_vars.values()), "All values in runtime_env must be strings"
+        assert all(
+            isinstance(value, str) for value in runtime_env_vars.values()
+        ), "All values in runtime_env must be strings"
     else:
         runtime_env_vars = None
 
@@ -91,6 +112,7 @@ def submit(
         num_gpus=num_gpus,
         executor=executor,
         docker_image=docker_image,
+        database=database,
     )
     console.print("Submitting job...")
     job_manager.add_job(job)
@@ -298,9 +320,11 @@ def delete_job(
 
     for job in jobs:
         job_manager.delete_job(job.id)
-        
+
     if job_id == "all":
-        console.print(f"[bold green]Successfully deleted all {len(job_ids_to_delete)} jobs.[/bold green]")
+        console.print(
+            f"[bold green]Successfully deleted all {len(job_ids_to_delete)} jobs.[/bold green]"
+        )
     else:
         console.print(f"[bold green]Successfully deleted job {job_id}.[/bold green]")
     console.print("All specified jobs have been stopped and removed from the system.")

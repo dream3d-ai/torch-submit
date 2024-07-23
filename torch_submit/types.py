@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
+from torch_submit.db_config import Database
+
 from .cluster_config import Node
 
 
@@ -35,6 +37,7 @@ class Job:
     pids: Dict[Node, int] = field(default_factory=dict)
     executor: Executor = field(default_factory=Executor.TORCHRUN)
     docker_image: Optional[str] = None  # docker image
+    database: Optional[Database] = None
 
     @classmethod
     def from_db(cls, row: Tuple) -> "Job":
@@ -56,10 +59,11 @@ class Job:
             cluster=row[5],
             command=row[6],
             max_restarts=int(row[7]),
-            num_gpus=int(row[8]) if row[8] else None,
+            num_gpus=int(row[8]) if row[8] else None,            
             pids=pids,
-            executor=Executor(row[10]),
+            executor=Executor(row[11]),
             docker_image=row[11] or None,
+            database=Database.from_db(row[10]) if row[10] else None,
         )
 
     def to_db(self) -> Tuple:
@@ -76,6 +80,7 @@ class Job:
             ",".join([f"{k}:{v}" for k, v in self.pids.items()]),
             self.executor.value,
             self.docker_image or "",
+            self.database.to_db() or "",
         )
 
     def get_executor(self):
@@ -115,6 +120,7 @@ class Job:
             f"num_gpus={self.num_gpus}, "
             f"pids={self.pids}, "
             f"executor={self.executor}, "
-            f"docker_image={self.docker_image}"
+            f"docker_image={self.docker_image}, "
+            f"database={self.database}"
             f")"
         )
