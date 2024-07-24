@@ -25,6 +25,7 @@ dependencies = [
     "sqlalchemy",
     "psycopg2",
     "optuna",
+    "optuna-dashboard",
 ]
 dynamic = ["version"]
 

@@ -1,4 +1,5 @@
 import os
+import random
 import uuid
 from typing import List, Optional
 
@@ -112,6 +113,7 @@ def submit(
         executor=executor,
         docker_image=docker_image,
         database=database,
+        optuna_port=random.randint(8000, 9000) if executor == Executor.OPTUNA else None,
     )
     console.print("Submitting job...")
     job_manager.add_job(job)
@@ -217,6 +219,10 @@ def stop_job(job_id: str = typer.Argument(..., help="Job ID or name")):
         for node, pid in job.pids.items():
             with NodeConnection(node) as c:
                 c.run(f"pkill -TERM -P {pid}", warn=True)
+
+        if job.optuna_port:
+            with NodeConnection(job.nodes[0]) as c:
+                c.run(f"pkill -TERM -f 'optuna-dashboard --port {job.optuna_port}'", warn=True)
 
         job_manager.update_job_status(job_id, JobStatus.STOPPING)
         console.print(f"Job [bold green]{job_id}[/bold green] is stopping")

@@ -36,6 +36,11 @@ class Job:
     executor: Executor = field(default_factory=Executor.TORCHRUN)
     docker_image: Optional[str] = None
     database: Optional[Database] = None
+    optuna_port: Optional[int] = None
+
+    def __post_init__(self):
+        if self.executor == Executor.OPTUNA and not self.optuna_port:
+            raise ValueError("Optuna executor requires a port")
 
     @classmethod
     def from_db(cls, row: Tuple) -> "Job":
@@ -62,6 +67,7 @@ class Job:
             executor=Executor(row[11]),
             docker_image=row[11] or None,
             database=Database.from_db(row[10]) if row[10] else None,
+            optuna_port=int(row[12]) if row[12] else None,
         )
 
     def to_db(self) -> Tuple:
@@ -79,6 +85,7 @@ class Job:
             self.executor.value,
             self.docker_image or "",
             self.database.to_db() or "",
+            self.optuna_port or "",
         )
 
     def get_executor(self):
@@ -119,6 +126,7 @@ class Job:
             f"pids={self.pids}, "
             f"executor={self.executor}, "
             f"docker_image={self.docker_image}, "
-            f"database={self.database}"
+            f"database={self.database}, "
+            f"optuna_port={self.optuna_port}"
             f")"
         )

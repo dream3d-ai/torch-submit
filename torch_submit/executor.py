@@ -376,6 +376,11 @@ class OptunaExecutor(DistributedExecutor):
             study_name=self.job.name,
             storage=self.job.database.uri,
         )
+        with NodeConnection(self.cluster.head_node) as conn:
+            conn.run(f"nohup optuna-dashboard --port {self.job.optuna_port} &")
+            console.print(
+                f"[bold blue]Optuna dashboard running on {self.cluster.head_node.public_ip}:{self.job.optuna_port}[/bold blue]"
+            )
         return super().execute()
 
 

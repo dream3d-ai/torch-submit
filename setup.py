@@ -13,6 +13,7 @@ setup(
         "sqlalchemy",
         "psycopg2",
         "optuna",
+        "optuna-dashboard",
     ],
     entry_points={
         "console_scripts": [
