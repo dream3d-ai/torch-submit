@@ -24,15 +24,16 @@
   - [Database](#database)
     - [Database.from_db](#databasefrom_db)
     - [Database().to_db](#database()to_db)
-    - [Database().to_uri](#database()to_uri)
+    - [Database().uri](#database()uri)
   - [DatabaseType](#databasetype)
+    - [DatabaseType().connection_string](#databasetype()connection_string)
   - [Node](#node)
     - [Node.from_db](#nodefrom_db)
     - [Node().to_db](#node()to_db)
 
 ## Cluster
 
-[Show source in config.py:55](../torch_submit/config.py#L55)
+[Show source in config.py:56](../torch_submit/config.py#L56)
 
 #### Signature
 
@@ -44,7 +45,7 @@ class Cluster: ...
 
 ## Config
 
-[Show source in config.py:118](../torch_submit/config.py#L118)
+[Show source in config.py:127](../torch_submit/config.py#L127)
 
 #### Signature
 
@@ -55,7 +56,7 @@ class Config:
 
 ### Config().add_cluster
 
-[Show source in config.py:181](../torch_submit/config.py#L181)
+[Show source in config.py:190](../torch_submit/config.py#L190)
 
 #### Signature
 
@@ -69,7 +70,7 @@ def add_cluster(self, name: str, head_node: Node, worker_nodes: List[Node]): ...
 
 ### Config().add_db
 
-[Show source in config.py:221](../torch_submit/config.py#L221)
+[Show source in config.py:230](../torch_submit/config.py#L230)
 
 #### Signature
 
@@ -91,7 +92,7 @@ def add_db(
 
 ### Config().add_worker_node
 
-[Show source in config.py:198](../torch_submit/config.py#L198)
+[Show source in config.py:207](../torch_submit/config.py#L207)
 
 #### Signature
 
@@ -105,7 +106,7 @@ def add_worker_node(self, cluster_name: str, worker_node: Node): ...
 
 ### Config().get_cluster
 
-[Show source in config.py:190](../torch_submit/config.py#L190)
+[Show source in config.py:199](../torch_submit/config.py#L199)
 
 #### Signature
 
@@ -119,7 +120,7 @@ def get_cluster(self, cluster_name: str) -> Cluster: ...
 
 ### Config().get_db
 
-[Show source in config.py:240](../torch_submit/config.py#L240)
+[Show source in config.py:250](../torch_submit/config.py#L250)
 
 #### Signature
 
@@ -133,7 +134,7 @@ def get_db(self, db_name: str) -> Database: ...
 
 ### Config().list_clusters
 
-[Show source in config.py:195](../torch_submit/config.py#L195)
+[Show source in config.py:204](../torch_submit/config.py#L204)
 
 #### Signature
 
@@ -143,7 +144,7 @@ def list_clusters(self) -> List[str]: ...
 
 ### Config().list_dbs
 
-[Show source in config.py:245](../torch_submit/config.py#L245)
+[Show source in config.py:255](../torch_submit/config.py#L255)
 
 #### Signature
 
@@ -153,7 +154,7 @@ def list_dbs(self) -> List[str]: ...
 
 ### Config().load_config
 
-[Show source in config.py:125](../torch_submit/config.py#L125)
+[Show source in config.py:134](../torch_submit/config.py#L134)
 
 #### Signature
 
@@ -163,7 +164,7 @@ def load_config(self): ...
 
 ### Config().remove_cluster
 
-[Show source in config.py:185](../torch_submit/config.py#L185)
+[Show source in config.py:194](../torch_submit/config.py#L194)
 
 #### Signature
 
@@ -173,7 +174,7 @@ def remove_cluster(self, name: str): ...
 
 ### Config().remove_db
 
-[Show source in config.py:235](../torch_submit/config.py#L235)
+[Show source in config.py:245](../torch_submit/config.py#L245)
 
 #### Signature
 
@@ -183,7 +184,7 @@ def remove_db(self, name: str): ...
 
 ### Config().remove_worker_node
 
-[Show source in config.py:204](../torch_submit/config.py#L204)
+[Show source in config.py:213](../torch_submit/config.py#L213)
 
 #### Signature
 
@@ -193,7 +194,7 @@ def remove_worker_node(self, cluster_name: str, worker_node_ip: str): ...
 
 ### Config().save_config
 
-[Show source in config.py:141](../torch_submit/config.py#L141)
+[Show source in config.py:150](../torch_submit/config.py#L150)
 
 #### Signature
 
@@ -203,7 +204,7 @@ def save_config(self): ...
 
 ### Config().update_cluster
 
-[Show source in config.py:214](../torch_submit/config.py#L214)
+[Show source in config.py:223](../torch_submit/config.py#L223)
 
 #### Signature
 
@@ -217,7 +218,7 @@ def update_cluster(self, name: str, head_node: Node, worker_nodes: List[Node]): 
 
 ### Config().update_db
 
-[Show source in config.py:248](../torch_submit/config.py#L248)
+[Show source in config.py:258](../torch_submit/config.py#L258)
 
 #### Signature
 
@@ -231,7 +232,7 @@ def update_db(
 
 ## Database
 
-[Show source in config.py:66](../torch_submit/config.py#L66)
+[Show source in config.py:76](../torch_submit/config.py#L76)
 
 #### Signature
 
@@ -241,7 +242,7 @@ class Database: ...
 
 ### Database.from_db
 
-[Show source in config.py:77](../torch_submit/config.py#L77)
+[Show source in config.py:87](../torch_submit/config.py#L87)
 
 #### Signature
 
@@ -252,7 +253,7 @@ def from_db(cls, row: str): ...
 
 ### Database().to_db
 
-[Show source in config.py:93](../torch_submit/config.py#L93)
+[Show source in config.py:102](../torch_submit/config.py#L102)
 
 #### Signature
 
@@ -260,21 +261,22 @@ def from_db(cls, row: str): ...
 def to_db(self): ...
 ```
 
-### Database().to_uri
+### Database().uri
 
-[Show source in config.py:88](../torch_submit/config.py#L88)
+[Show source in config.py:98](../torch_submit/config.py#L98)
 
 #### Signature
 
 ```python
-def to_uri(self): ...
+@property
+def uri(self): ...
 ```
 
 
 
 ## DatabaseType
 
-[Show source in config.py:60](../torch_submit/config.py#L60)
+[Show source in config.py:61](../torch_submit/config.py#L61)
 
 #### Signature
 
@@ -282,11 +284,22 @@ def to_uri(self): ...
 class DatabaseType(str, Enum): ...
 ```
 
+### DatabaseType().connection_string
+
+[Show source in config.py:65](../torch_submit/config.py#L65)
+
+#### Signature
+
+```python
+@property
+def connection_string(self): ...
+```
+
 
 
 ## Node
 
-[Show source in config.py:10](../torch_submit/config.py#L10)
+[Show source in config.py:11](../torch_submit/config.py#L11)
 
 #### Signature
 
@@ -296,7 +309,7 @@ class Node: ...
 
 ### Node.from_db
 
-[Show source in config.py:25](../torch_submit/config.py#L25)
+[Show source in config.py:26](../torch_submit/config.py#L26)
 
 #### Signature
 
@@ -307,7 +320,7 @@ def from_db(cls, row: str): ...
 
 ### Node().to_db
 
-[Show source in config.py:39](../torch_submit/config.py#L39)
+[Show source in config.py:40](../torch_submit/config.py#L40)
 
 #### Signature
 

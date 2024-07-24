@@ -10,6 +10,9 @@ setup(
         "rich",
         "pyyaml",
         "fabric",
+        "sqlalchemy",
+        "psycopg2",
+        "optuna",
     ],
     entry_points={
         "console_scripts": [

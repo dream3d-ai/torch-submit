@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Dict, List, Optional
 
 import yaml
+from sqlalchemy import create_engine, text
 
 
 @dataclass
@@ -60,6 +61,15 @@ class Cluster:
 class DatabaseType(str, Enum):
     POSTGRES = "postgres"
     MYSQL = "mysql"
+    
+    @property
+    def connection_string(self):
+        if self == DatabaseType.POSTGRES:
+            return "postgresql+psycopg2"
+        elif self == DatabaseType.MYSQL:
+            return "mysql"
+        else:
+            raise ValueError(f"Unknown database type: {self}")
 
 
 @dataclass
@@ -85,10 +95,9 @@ class Database:
             DatabaseType(type),
         )
 
-    def to_uri(self):
-        return (
-            f"{self.type}://{self.username}:{self.password}@{self.address}:{self.port}"
-        )
+    @property
+    def uri(self):
+        return f"{self.type.connection_string}://{self.username}:{self.password}@{self.address}:{self.port}/torch_submit"
 
     def to_db(self):
         return f"{self.address}:{self.port}:{self.username}:{self.password or ''}:{self.type.value}"
@@ -227,10 +236,11 @@ class Config:
         username: str,
         password: str,
     ):
-        self.databases[name] = Database(
-            address, port, username, password, type
-        )
+        self.databases[name] = Database(address, port, username, password, type)
         self.save_config()
+        engine = create_engine(self.databases[name].uri.strip("/torch_submit"))
+        with engine.connect() as conn:
+            conn.execute(text("CREATE DATABASE IF NOT EXISTS torch_submit"))
 
     def remove_db(self, name: str):
         if name in self.databases:
@@ -256,7 +266,5 @@ class Config:
     ):
         if name not in self.databases:
             raise ValueError(f"Database '{name}' not found in config")
-        self.databases[name] = Database(
-            address, port, username, password, type
-        )
+        self.databases[name] = Database(address, port, username, password, type)
         self.save_config()

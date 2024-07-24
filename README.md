@@ -18,6 +18,7 @@ It's encouraged to read `torch_submit/executor.py` to understand how jobs are cr
 - Easy job submission: Run your PyTorch jobs with a single command
 - Job management: Submit, stop, restart, and monitor your jobs
 - Log tailing: Easily view the logs of your running jobs
+- Optuna Integration for parallel hyperparameter optimization
 
 ## Installation
 
@@ -85,6 +86,10 @@ pip install -e . --prefix ~/.local
 ### Log Management
 
 - Tail logs: `torch-submit job logs <job_id>`
+
+### Optuna
+
+The Optuna exectuor requires setting a database connection. This can be done via `torch-submit db create`. This will create a new database within the specified connection called `torch_submit`. This database should be accessible to all machines in a cluster. Study name and storage info will be accessible to to the job via "OPTUNA_STUDY_NAME" and "OPTUNA_STORAGE" environment variables.
 
 ## Configuration
 

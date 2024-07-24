@@ -6,6 +6,7 @@ import zipfile
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
 
+import optuna
 from fabric import Connection
 from invoke import UnexpectedExit
 from rich.console import Console
@@ -356,7 +357,7 @@ class OptunaExecutor(DistributedExecutor):
             f"WORLD_SIZE={world_size} "
             f"NODE_RANK={rank} "
             f"OPTUNA_STUDY_NAME={self.job.name} "
-            f"OPTUNA_STORAGE={self.job.database.to_uri()} "
+            f"OPTUNA_STORAGE={self.job.database.uri} "
             f"{formatted_env_vars} "
         )
 
@@ -371,7 +372,10 @@ class OptunaExecutor(DistributedExecutor):
         Returns:
             Dict[Node, int]: A dictionary mapping nodes to their process IDs.
         """
-        self.setup_db()
+        optuna.create_study(
+            study_name=self.job.name,
+            storage=self.job.database.uri,
+        )
         return super().execute()
 
 
