@@ -23,6 +23,8 @@
 
 [Show source in job.py:14](../torch_submit/job.py#L14)
 
+Manages job-related operations and database interactions.
+
 #### Signature
 
 ```python
@@ -34,7 +36,13 @@ class JobManager:
 
 ### JobManager().add_job
 
-[Show source in job.py:41](../torch_submit/job.py#L41)
+[Show source in job.py:49](../torch_submit/job.py#L49)
+
+Add a new job to the database.
+
+#### Arguments
+
+- [Job](#job) *Job* - The job to be added.
 
 #### Signature
 
@@ -48,7 +56,21 @@ def add_job(self, job: Job): ...
 
 ### JobManager().check_job_status
 
-[Show source in job.py:70](../torch_submit/job.py#L70)
+[Show source in job.py:96](../torch_submit/job.py#L96)
+
+Check the current status of a job.
+
+#### Arguments
+
+- [Job](#job) *Job* - The job to check.
+
+#### Returns
+
+- `str` - The current status of the job.
+
+#### Raises
+
+- `RuntimeError` - If an unknown job status is encountered.
 
 #### Signature
 
@@ -62,7 +84,9 @@ def check_job_status(self, job: Job) -> str: ...
 
 ### JobManager().close
 
-[Show source in job.py:176](../torch_submit/job.py#L176)
+[Show source in job.py:239](../torch_submit/job.py#L239)
+
+Close the database connection.
 
 #### Signature
 
@@ -72,7 +96,9 @@ def close(self): ...
 
 ### JobManager().create_table
 
-[Show source in job.py:23](../torch_submit/job.py#L23)
+[Show source in job.py:30](../torch_submit/job.py#L30)
+
+Create the jobs table if it doesn't exist.
 
 #### Signature
 
@@ -82,7 +108,9 @@ def create_table(self): ...
 
 ### JobManager().delete_all_jobs
 
-[Show source in job.py:172](../torch_submit/job.py#L172)
+[Show source in job.py:234](../torch_submit/job.py#L234)
+
+Delete all jobs from the database.
 
 #### Signature
 
@@ -92,7 +120,13 @@ def delete_all_jobs(self): ...
 
 ### JobManager().delete_job
 
-[Show source in job.py:168](../torch_submit/job.py#L168)
+[Show source in job.py:225](../torch_submit/job.py#L225)
+
+Delete a job from the database.
+
+#### Arguments
+
+- `job_id` *str* - The ID of the job to delete.
 
 #### Signature
 
@@ -102,7 +136,13 @@ def delete_job(self, job_id: str): ...
 
 ### JobManager().get_all_jobs_with_status
 
-[Show source in job.py:136](../torch_submit/job.py#L136)
+[Show source in job.py:173](../torch_submit/job.py#L173)
+
+Retrieve all jobs and update their statuses.
+
+#### Returns
+
+- `List[Job]` - A list of all jobs with updated statuses.
 
 #### Signature
 
@@ -116,7 +156,17 @@ def get_all_jobs_with_status(self) -> List[Job]: ...
 
 ### JobManager().get_job
 
-[Show source in job.py:51](../torch_submit/job.py#L51)
+[Show source in job.py:64](../torch_submit/job.py#L64)
+
+Retrieve a job by its ID or name.
+
+#### Arguments
+
+- `job_id_or_name` *str* - The ID or name of the job.
+
+#### Returns
+
+- `Optional[Job]` - The retrieved job, or None if not found.
 
 #### Signature
 
@@ -130,7 +180,13 @@ def get_job(self, job_id_or_name: str) -> Optional[Job]: ...
 
 ### JobManager().list_jobs
 
-[Show source in job.py:66](../torch_submit/job.py#L66)
+[Show source in job.py:87](../torch_submit/job.py#L87)
+
+Retrieve all jobs from the database.
+
+#### Returns
+
+- `List[Job]` - A list of all jobs.
 
 #### Signature
 
@@ -144,7 +200,9 @@ def list_jobs(self) -> List[Job]: ...
 
 ### JobManager().migrate_table
 
-[Show source in job.py:179](../torch_submit/job.py#L179)
+[Show source in job.py:243](../torch_submit/job.py#L243)
+
+Perform any necessary database migrations.
 
 #### Signature
 
@@ -154,7 +212,14 @@ def migrate_table(self): ...
 
 ### JobManager().update_job_pids
 
-[Show source in job.py:158](../torch_submit/job.py#L158)
+[Show source in job.py:209](../torch_submit/job.py#L209)
+
+Update the process IDs for a job in the database.
+
+#### Arguments
+
+- `job_id` *str* - The ID of the job to update.
+pids (Dict[Node, int]): A dictionary mapping nodes to process IDs.
 
 #### Signature
 
@@ -168,7 +233,18 @@ def update_job_pids(self, job_id: str, pids: Dict[Node, int]): ...
 
 ### JobManager().update_job_status
 
-[Show source in job.py:150](../torch_submit/job.py#L150)
+[Show source in job.py:192](../torch_submit/job.py#L192)
+
+Update the status of a job in the database.
+
+#### Arguments
+
+- `job_id` *str* - The ID of the job to update.
+- `status` *JobStatus* - The new status of the job.
+
+#### Raises
+
+- `ValueError` - If an invalid job status is provided.
 
 #### Signature
 

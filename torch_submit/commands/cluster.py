@@ -13,7 +13,12 @@ config = Config()
 
 @app.command("create")
 def create_cluster():
-    """Interactively create a new cluster configuration."""
+    """
+    Interactively create a new cluster configuration.
+
+    Prompts the user for cluster details such as name, head node, and worker nodes.
+    Adds the new cluster configuration to the config.
+    """
     name = Prompt.ask("Enter cluster name")
 
     # Head node
@@ -71,7 +76,11 @@ def create_cluster():
 
 @app.command("list")
 def list_clusters():
-    """List all available clusters."""
+    """
+    List all available clusters.
+
+    Retrieves the list of clusters from the config and displays them in a table format.
+    """
     clusters = config.list_clusters()
 
     table = Table(title="Available Clusters", box=box.ROUNDED)
@@ -102,7 +111,14 @@ def list_clusters():
 
 @app.command("remove")
 def remove_cluster(name: str):
-    """Remove a cluster configuration."""
+    """
+    Remove a cluster configuration.
+
+    Prompts the user for confirmation before removing the specified cluster configuration from the config.
+    
+    Args:
+        name (str): The name of the cluster to remove.
+    """
     if Confirm.ask(f"Are you sure you want to remove cluster '{name}'?"):
         config.remove_cluster(name)
         console.print(f"Cluster [bold red]{name}[/bold red] removed.")
@@ -112,7 +128,14 @@ def remove_cluster(name: str):
 
 @app.command("edit")
 def edit_cluster(name: str):
-    """Edit an existing cluster configuration."""
+    """
+    Edit an existing cluster configuration.
+
+    Prompts the user for new cluster details and updates the specified cluster configuration in the config.
+    
+    Args:
+        name (str): The name of the cluster to edit.
+    """
     try:
         cluster = config.get_cluster(name)
     except ValueError:

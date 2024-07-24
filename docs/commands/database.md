@@ -16,6 +16,9 @@
 
 Interactively create a new database configuration.
 
+Prompts the user for database details such as name, type, address, port, username, and password.
+Adds the new database configuration to the config.
+
 #### Signature
 
 ```python
@@ -27,9 +30,15 @@ def create_database(): ...
 
 ## edit_database
 
-[Show source in database.py:66](../../torch_submit/commands/database.py#L66)
+[Show source in database.py:82](../../torch_submit/commands/database.py#L82)
 
 Edit an existing database configuration.
+
+Prompts the user for new database details and updates the specified database configuration in the config.
+
+#### Arguments
+
+- `name` *str* - The name of the database to edit.
 
 #### Signature
 
@@ -42,9 +51,11 @@ def edit_database(name: str): ...
 
 ## list_databases
 
-[Show source in database.py:29](../../torch_submit/commands/database.py#L29)
+[Show source in database.py:34](../../torch_submit/commands/database.py#L34)
 
 List all available databases.
+
+Retrieves the list of databases from the config and displays them in a table format.
 
 #### Signature
 
@@ -57,9 +68,15 @@ def list_databases(): ...
 
 ## remove_database
 
-[Show source in database.py:56](../../torch_submit/commands/database.py#L56)
+[Show source in database.py:65](../../torch_submit/commands/database.py#L65)
 
 Remove a database configuration.
+
+Prompts the user for confirmation before removing the specified database configuration from the config.
+
+#### Arguments
+
+- `name` *str* - The name of the database to remove.
 
 #### Signature
 

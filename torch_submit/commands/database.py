@@ -12,7 +12,12 @@ config = Config()
 
 @app.command("create")
 def create_database():
-    """Interactively create a new database configuration."""
+    """
+    Interactively create a new database configuration.
+
+    Prompts the user for database details such as name, type, address, port, username, and password.
+    Adds the new database configuration to the config.
+    """
     name = Prompt.ask("Enter database name")
 
     # Database address and port
@@ -28,7 +33,11 @@ def create_database():
 
 @app.command("list")
 def list_databases():
-    """List all available databases."""
+    """
+    List all available databases.
+
+    Retrieves the list of databases from the config and displays them in a table format.
+    """
     databases = config.list_dbs()
 
     table = Table(title="Available Databases", box=box.ROUNDED)
@@ -55,7 +64,14 @@ def list_databases():
 
 @app.command("remove")
 def remove_database(name: str):
-    """Remove a database configuration."""
+    """
+    Remove a database configuration.
+
+    Prompts the user for confirmation before removing the specified database configuration from the config.
+    
+    Args:
+        name (str): The name of the database to remove.
+    """
     if Confirm.ask(f"Are you sure you want to remove database '{name}'?"):
         config.remove_db(name)
         console.print(f"Database [bold red]{name}[/bold red] removed.")
@@ -65,7 +81,14 @@ def remove_database(name: str):
 
 @app.command("edit")
 def edit_database(name: str):
-    """Edit an existing database configuration."""
+    """
+    Edit an existing database configuration.
+
+    Prompts the user for new database details and updates the specified database configuration in the config.
+    
+    Args:
+        name (str): The name of the database to edit.
+    """
     try:
         database = config.get_db(name)
     except ValueError:

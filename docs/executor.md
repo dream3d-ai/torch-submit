@@ -27,7 +27,7 @@
 
 ## BaseExecutor
 
-[Show source in executor.py:74](../torch_submit/executor.py#L74)
+[Show source in executor.py:114](../torch_submit/executor.py#L114)
 
 Base class for executing jobs across a cluster.
 
@@ -54,7 +54,7 @@ class BaseExecutor(ABC):
 
 ### BaseExecutor()._run_job
 
-[Show source in executor.py:139](../torch_submit/executor.py#L139)
+[Show source in executor.py:179](../torch_submit/executor.py#L179)
 
 Run the job on the specified node.
 
@@ -81,7 +81,7 @@ def _run_job(
 
 ### BaseExecutor().cleanup
 
-[Show source in executor.py:192](../torch_submit/executor.py#L192)
+[Show source in executor.py:232](../torch_submit/executor.py#L232)
 
 Clean up the remote directories on all nodes.
 
@@ -96,7 +96,7 @@ def cleanup(self): ...
 
 ### BaseExecutor().execute
 
-[Show source in executor.py:106](../torch_submit/executor.py#L106)
+[Show source in executor.py:146](../torch_submit/executor.py#L146)
 
 Execute the job command on each node in the cluster.
 
@@ -120,7 +120,7 @@ def execute(self, env_vars: Optional[Dict[str, str]] = None) -> Dict[Node, int]:
 
 ### BaseExecutor().get_command
 
-[Show source in executor.py:93](../torch_submit/executor.py#L93)
+[Show source in executor.py:133](../torch_submit/executor.py#L133)
 
 Generate the command to be executed on the given node rank.
 
@@ -143,7 +143,7 @@ def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None): ...
 
 ## DistributedExecutor
 
-[Show source in executor.py:209](../torch_submit/executor.py#L209)
+[Show source in executor.py:249](../torch_submit/executor.py#L249)
 
 The DistributedExecutor is responsible for setting up the environment for running
 distributed PyTorch jobs. It ensures that the necessary environment variables are set
@@ -172,7 +172,7 @@ class DistributedExecutor(BaseExecutor):
 
 ### DistributedExecutor().get_command
 
-[Show source in executor.py:229](../torch_submit/executor.py#L229)
+[Show source in executor.py:269](../torch_submit/executor.py#L269)
 
 Constructs the command to run the job with the torch distributed environment variables set.
 
@@ -198,7 +198,7 @@ def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None): ...
 
 ## DockerDistributedExecutor
 
-[Show source in executor.py:382](../torch_submit/executor.py#L382)
+[Show source in executor.py:427](../torch_submit/executor.py#L427)
 
 EXPERIMENTAL:
 DockerDistributedExecutor is an executor that runs distributed jobs inside Docker containers.
@@ -226,7 +226,7 @@ class DockerDistributedExecutor(DistributedExecutor):
 
 ### DockerDistributedExecutor().get_command
 
-[Show source in executor.py:400](../torch_submit/executor.py#L400)
+[Show source in executor.py:445](../torch_submit/executor.py#L445)
 
 Constructs the command to run the job with the torch distributed environment variables set.
 
@@ -252,7 +252,7 @@ def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None): ...
 
 ## JobExecutionManager
 
-[Show source in executor.py:441](../torch_submit/executor.py#L441)
+[Show source in executor.py:486](../torch_submit/executor.py#L486)
 
 #### Signature
 
@@ -262,7 +262,7 @@ class JobExecutionManager: ...
 
 ### JobExecutionManager.cancel_job
 
-[Show source in executor.py:456](../torch_submit/executor.py#L456)
+[Show source in executor.py:501](../torch_submit/executor.py#L501)
 
 #### Signature
 
@@ -277,7 +277,7 @@ def cancel_job(job: Job): ...
 
 ### JobExecutionManager.submit_job
 
-[Show source in executor.py:442](../torch_submit/executor.py#L442)
+[Show source in executor.py:487](../torch_submit/executor.py#L487)
 
 #### Signature
 
@@ -294,7 +294,7 @@ def submit_job(job: Job): ...
 
 ## OptunaExecutor
 
-[Show source in executor.py:327](../torch_submit/executor.py#L327)
+[Show source in executor.py:367](../torch_submit/executor.py#L367)
 
 The OptunaExecutor sets up and manages the execution of Optuna distributed optimization jobs.
 
@@ -323,7 +323,7 @@ class OptunaExecutor(DistributedExecutor):
 
 ### OptunaExecutor().execute
 
-[Show source in executor.py:364](../torch_submit/executor.py#L364)
+[Show source in executor.py:404](../torch_submit/executor.py#L404)
 
 Set up the database on the head node and then run the DistributedExecutor execute method.
 
@@ -347,7 +347,7 @@ def execute(self) -> Dict[Node, int]: ...
 
 ### OptunaExecutor().get_command
 
-[Show source in executor.py:346](../torch_submit/executor.py#L346)
+[Show source in executor.py:386](../torch_submit/executor.py#L386)
 
 #### Signature
 
@@ -359,7 +359,7 @@ def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None): ...
 
 ## TorchrunExecutor
 
-[Show source in executor.py:262](../torch_submit/executor.py#L262)
+[Show source in executor.py:302](../torch_submit/executor.py#L302)
 
 #### Signature
 
@@ -375,7 +375,7 @@ class TorchrunExecutor(BaseExecutor):
 
 ### TorchrunExecutor().get_command
 
-[Show source in executor.py:267](../torch_submit/executor.py#L267)
+[Show source in executor.py:307](../torch_submit/executor.py#L307)
 
 Constructs the command to run the job with torchrun.
 
@@ -403,6 +403,17 @@ def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None): ...
 
 [Show source in executor.py:21](../torch_submit/executor.py#L21)
 
+A class to handle archiving of working directories for jobs.
+
+This class creates a zip archive of the specified working directory, including job metadata
+and excluding files specified in a .gitignore file.
+
+#### Attributes
+
+- `job_id` *str* - The ID of the job.
+- `job_name` *str* - The name of the job.
+- `output_dir` *str* - The directory where the archive will be saved.
+
 #### Signature
 
 ```python
@@ -412,7 +423,20 @@ class WorkingDirectoryArchiver:
 
 ### WorkingDirectoryArchiver().archive
 
-[Show source in executor.py:29](../torch_submit/executor.py#L29)
+[Show source in executor.py:48](../torch_submit/executor.py#L48)
+
+Create a zip archive of the specified working directory.
+
+This method reads the .gitignore file in the working directory to determine which files
+to exclude from the archive. It also includes job metadata in the archive.
+
+#### Arguments
+
+- `working_dir` *str* - The path to the working directory to be archived.
+
+#### Returns
+
+- `str` - The path to the created zip archive.
 
 #### Signature
 

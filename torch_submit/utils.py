@@ -4,14 +4,13 @@ from typing import Dict, Optional
 
 
 def generate_friendly_name() -> str:
-    """
-    Generate a friendly, human-readable name for a job.
+    """Generate a friendly, human-readable name for a job.
 
     This function creates a name by combining a random adjective, a random animal noun,
     and a random 4-digit number. The name format is 'adjective-noun-number'.
 
     Returns:
-        str: A friendly name string in the format 'adjective-noun-number'.
+        A friendly name string in the format 'adjective-noun-number'.
 
     Example:
         >>> generate_friendly_name()
@@ -57,15 +56,14 @@ def generate_friendly_name() -> str:
 
 
 def get_job_metadata() -> Optional[Dict[str, str]]:
-    """
-    Retrieve job metadata from the '.torch/job.json' file.
+    """Retrieve job metadata from the '.torch/job.json' file.
 
     This function attempts to read and parse the job metadata stored in the
     '.torch/job.json' file in the current working directory.
 
     Returns:
-        Optional[Dict[str, str]]: A dictionary containing job metadata if the file
-        exists and can be parsed successfully, or None if the file is not found.
+        A dictionary containing job metadata if the file exists and can be parsed
+        successfully, or None if the file is not found.
 
     Raises:
         json.JSONDecodeError: If the file exists but contains invalid JSON.

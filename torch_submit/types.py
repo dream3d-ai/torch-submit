@@ -6,12 +6,14 @@ from .config import Database, Node
 
 
 class Executor(str, Enum):
+    """Enumeration of different types of executors."""
     TORCHRUN = "torchrun"
     DISTRIBUTED = "distributed"
     OPTUNA = "optuna"
 
 
 class JobStatus(str, Enum):
+    """Enumeration of different job statuses."""
     SUBMITTED = "submitted"
     RUNNING = "running"
     STOPPING = "stopping"
@@ -23,6 +25,26 @@ class JobStatus(str, Enum):
 
 @dataclass
 class Job:
+    """
+    A class representing a job to be executed.
+
+    Attributes:
+        id (str): The ID of the job.
+        name (str): The name of the job.
+        status (JobStatus): The current status of the job.
+        working_dir (str): The working directory for the job.
+        nodes (List[Node]): The list of nodes assigned to the job.
+        cluster (str): The cluster to which the job belongs.
+        command (str): The command to be executed for the job.
+        max_restarts (int): The maximum number of restarts allowed for the job.
+        num_gpus (Optional[int]): The number of GPUs allocated for the job.
+        pids (Dict[Node, int]): A dictionary mapping nodes to process IDs.
+        executor (Executor): The executor type for the job.
+        docker_image (Optional[str]): The Docker image to be used for the job.
+        database (Optional[Database]): The database configuration for the job.
+        optuna_port (Optional[int]): The port for Optuna executor.
+    """
+
     id: str
     name: str
     status: JobStatus
@@ -39,11 +61,21 @@ class Job:
     optuna_port: Optional[int] = None
 
     def __post_init__(self):
+        """Post-initialization checks for the Job class."""
         if self.executor == Executor.OPTUNA and not self.optuna_port:
             raise ValueError("Optuna executor requires a port")
 
     @classmethod
     def from_db(cls, row: Tuple) -> "Job":
+        """
+        Create a Job instance from a database row.
+
+        Args:
+            row (Tuple): A tuple representing a row from the database.
+
+        Returns:
+            Job: A Job instance created from the database row.
+        """
         nodes = [Node.from_db(node) for node in row[4].split(",")]
         pids = {}
         if row[9]:
@@ -71,6 +103,12 @@ class Job:
         )
 
     def to_db(self) -> Tuple:
+        """
+        Convert the Job instance to a tuple for database storage.
+
+        Returns:
+            Tuple: A tuple representing the Job instance for database storage.
+        """
         return (
             self.id,
             self.name,
@@ -89,6 +127,15 @@ class Job:
         )
 
     def get_executor(self):
+        """
+        Get the appropriate executor instance for the job.
+
+        Returns:
+            An instance of the appropriate executor class.
+
+        Raises:
+            ValueError: If an unknown executor type is specified or if Docker image is not supported for the executor.
+        """
         from .executor import (
             DistributedExecutor,
             DockerDistributedExecutor,
@@ -112,6 +159,12 @@ class Job:
             raise ValueError(f"Unknown executor: {self.executor}")
 
     def __str__(self):
+        """
+        Return a string representation of the Job instance.
+
+        Returns:
+            str: A string representation of the Job instance.
+        """
         return (
             f"Job("
             f"id={self.id}, "

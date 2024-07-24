@@ -19,7 +19,26 @@ console = Console()
 
 
 class WorkingDirectoryArchiver:
+    """
+    A class to handle archiving of working directories for jobs.
+
+    This class creates a zip archive of the specified working directory, including job metadata
+    and excluding files specified in a .gitignore file.
+
+    Attributes:
+        job_id (str): The ID of the job.
+        job_name (str): The name of the job.
+        output_dir (str): The directory where the archive will be saved.
+    """
+
     def __init__(self, job_id: str, job_name: str):
+        """
+        Initialize the WorkingDirectoryArchiver with job ID and job name.
+
+        Args:
+            job_id (str): The ID of the job.
+            job_name (str): The name of the job.
+        """
         self.job_id = job_id
         self.job_name = job_name
 
@@ -27,6 +46,18 @@ class WorkingDirectoryArchiver:
         os.makedirs(self.output_dir, exist_ok=True)
 
     def archive(self, working_dir: str) -> str:
+        """
+        Create a zip archive of the specified working directory.
+
+        This method reads the .gitignore file in the working directory to determine which files
+        to exclude from the archive. It also includes job metadata in the archive.
+
+        Args:
+            working_dir (str): The path to the working directory to be archived.
+
+        Returns:
+            str: The path to the created zip archive.
+        """
         archive_name = f"{os.path.basename(working_dir)}.zip"
         archive_path = os.path.join(self.output_dir, archive_name)
 
@@ -41,6 +72,15 @@ class WorkingDirectoryArchiver:
                 ]
 
         def should_ignore(path):
+            """
+            Determine if a file should be ignored based on .gitignore patterns.
+
+            Args:
+                path (str): The path to the file.
+
+            Returns:
+                bool: True if the file should be ignored, False otherwise.
+            """
             rel_path = os.path.relpath(path, working_dir)
             return any(
                 rel_path.startswith(pattern) or fnmatch.fnmatch(rel_path, pattern)

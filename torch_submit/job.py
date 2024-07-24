@@ -12,15 +12,23 @@ from .types import Job, JobStatus
 console = Console()
 
 class JobManager:
+    """Manages job-related operations and database interactions."""
+
     def __init__(
         self, db_path: str = os.path.expanduser("~/.cache/torch-submit/jobs.db")
     ):
+        """Initialize the JobManager.
+
+        Args:
+            db_path (str): Path to the SQLite database file.
+        """
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
         self.conn = sqlite3.connect(db_path)
         self.create_table()
         self.migrate_table()
 
     def create_table(self):
+        """Create the jobs table if it doesn't exist."""
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS jobs (
                 id TEXT PRIMARY KEY,
@@ -39,6 +47,11 @@ class JobManager:
         """)
 
     def add_job(self, job: Job):
+        """Add a new job to the database.
+
+        Args:
+            job (Job): The job to be added.
+        """
         self.conn.execute(
             """
             INSERT INTO jobs (id, name, status, working_dir, nodes, cluster, command, max_restarts, num_gpus, pids, executor, docker_image)
@@ -49,6 +62,14 @@ class JobManager:
         self.conn.commit()
 
     def get_job(self, job_id_or_name: str) -> Optional[Job]:
+        """Retrieve a job by its ID or name.
+
+        Args:
+            job_id_or_name (str): The ID or name of the job.
+
+        Returns:
+            Optional[Job]: The retrieved job, or None if not found.
+        """
         # Try to get by id first
         cursor = self.conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id_or_name,))
         row = cursor.fetchone()
@@ -64,10 +85,26 @@ class JobManager:
         return Job.from_db(row)
 
     def list_jobs(self) -> List[Job]:
+        """Retrieve all jobs from the database.
+
+        Returns:
+            List[Job]: A list of all jobs.
+        """
         cursor = self.conn.execute("SELECT * FROM jobs")
         return [Job.from_db(row) for row in cursor.fetchall()]
 
     def check_job_status(self, job: Job) -> str:
+        """Check the current status of a job.
+
+        Args:
+            job (Job): The job to check.
+
+        Returns:
+            str: The current status of the job.
+
+        Raises:
+            RuntimeError: If an unknown job status is encountered.
+        """
         if job.status in [JobStatus.STOPPED, JobStatus.FINISHED, JobStatus.CRASHED]:
             return job.status
 
@@ -134,6 +171,11 @@ class JobManager:
         raise RuntimeError(f"Unknown job status: {job.status}")
 
     def get_all_jobs_with_status(self) -> List[Job]:
+        """Retrieve all jobs and update their statuses.
+
+        Returns:
+            List[Job]: A list of all jobs with updated statuses.
+        """
         jobs = self.list_jobs()
         with ThreadPoolExecutor() as executor:
             futures = [executor.submit(self.check_job_status, job) for job in jobs]
@@ -148,6 +190,15 @@ class JobManager:
         return jobs
 
     def update_job_status(self, job_id: str, status: JobStatus):
+        """Update the status of a job in the database.
+
+        Args:
+            job_id (str): The ID of the job to update.
+            status (JobStatus): The new status of the job.
+
+        Raises:
+            ValueError: If an invalid job status is provided.
+        """
         if not isinstance(status, JobStatus):
             raise ValueError(f"Invalid job status: {status}")
         self.conn.execute(
@@ -156,6 +207,12 @@ class JobManager:
         self.conn.commit()
 
     def update_job_pids(self, job_id: str, pids: Dict[Node, int]):
+        """Update the process IDs for a job in the database.
+
+        Args:
+            job_id (str): The ID of the job to update.
+            pids (Dict[Node, int]): A dictionary mapping nodes to process IDs.
+        """
         self.conn.execute(
             "UPDATE jobs SET pids = ? WHERE id = ?",
             (
@@ -166,16 +223,24 @@ class JobManager:
         self.conn.commit()
 
     def delete_job(self, job_id: str):
+        """Delete a job from the database.
+
+        Args:
+            job_id (str): The ID of the job to delete.
+        """
         self.conn.execute("DELETE FROM jobs WHERE id = ?", (job_id,))
         self.conn.commit()
 
     def delete_all_jobs(self):
+        """Delete all jobs from the database."""
         self.conn.execute("DELETE FROM jobs")
         self.conn.commit()
 
     def close(self):
+        """Close the database connection."""
         self.conn.close()
 
     def migrate_table(self):
+        """Perform any necessary database migrations."""
         # Add any necessary migration steps here
         pass

@@ -48,7 +48,22 @@ def submit(
         None, help="Runtime environment yaml file to use"
     ),
 ):
-    """Submit a new job to a specified cluster."""
+    """
+    Submit a new job to a specified cluster.
+
+    Args:
+        cluster (str): Name of the cluster to use.
+        name (Optional[str]): Job name (optional, will be auto-generated if not provided).
+        working_dir (str): Path to working directory.
+        max_restarts (int): Maximum number of restarts for the job.
+        num_gpus (Optional[int]): Number of GPUs to use per node (optional, defaults to all available).
+        command (List[str]): The command to run, e.g. 'python main.py'.
+        tail (bool): Tail the logs after submitting the job.
+        executor (Executor): Executor to use.
+        docker_image (Optional[str]): Docker image to use.
+        database (Optional[str]): Database to use.
+        runtime_env (Optional[str]): Runtime environment yaml file to use.
+    """
     if executor == Executor.OPTUNA:
         if not database:
             console.print(
@@ -152,7 +167,13 @@ def print_logs(
     job_id: str = typer.Argument(..., help="Job ID or name"),
     tail: bool = typer.Option(False, help="Tail the logs"),
 ):
-    """Tail the logs of a specific job."""
+    """
+    Tail the logs of a specific job.
+
+    Args:
+        job_id (str): Job ID or name.
+        tail (bool): Tail the logs.
+    """
     job_manager = JobManager()
     job = job_manager.get_job(job_id)
     if job:
@@ -172,7 +193,9 @@ def print_logs(
 
 @app.command("list")
 def list_jobs():
-    """List all submitted jobs."""
+    """
+    List all submitted jobs.
+    """
     job_manager = JobManager()
     jobs = job_manager.get_all_jobs_with_status()
 
@@ -204,7 +227,12 @@ def list_jobs():
 
 @app.command("stop")
 def stop_job(job_id: str = typer.Argument(..., help="Job ID or name")):
-    """Stop a running job."""
+    """
+    Stop a running job.
+
+    Args:
+        job_id (str): Job ID or name.
+    """
     job_manager = JobManager()
     job = job_manager.get_job(job_id)
     if not job:
@@ -233,7 +261,12 @@ def stop_job(job_id: str = typer.Argument(..., help="Job ID or name")):
 
 @app.command("restart")
 def restart_job(job_id: str = typer.Argument(..., help="Job ID or name")):
-    """Restart a stopped job."""
+    """
+    Restart a stopped job.
+
+    Args:
+        job_id (str): Job ID or name.
+    """
     job = job_manager.get_job(job_id)
     if not job:
         console.print(
@@ -282,7 +315,12 @@ def delete_job(
         ..., help="Job ID or name to delete or 'all' to delete all jobs"
     ),
 ):
-    """Delete a job."""
+    """
+    Delete a job.
+
+    Args:
+        job_id (str): Job ID or name to delete or 'all' to delete all jobs.
+    """
     job_manager = JobManager()
     jobs = job_manager.get_all_jobs_with_status()
 

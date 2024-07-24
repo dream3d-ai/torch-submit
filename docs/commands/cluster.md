@@ -16,6 +16,9 @@
 
 Interactively create a new cluster configuration.
 
+Prompts the user for cluster details such as name, head node, and worker nodes.
+Adds the new cluster configuration to the config.
+
 #### Signature
 
 ```python
@@ -27,9 +30,15 @@ def create_cluster(): ...
 
 ## edit_cluster
 
-[Show source in cluster.py:113](../../torch_submit/commands/cluster.py#L113)
+[Show source in cluster.py:129](../../torch_submit/commands/cluster.py#L129)
 
 Edit an existing cluster configuration.
+
+Prompts the user for new cluster details and updates the specified cluster configuration in the config.
+
+#### Arguments
+
+- `name` *str* - The name of the cluster to edit.
 
 #### Signature
 
@@ -42,9 +51,11 @@ def edit_cluster(name: str): ...
 
 ## list_clusters
 
-[Show source in cluster.py:72](../../torch_submit/commands/cluster.py#L72)
+[Show source in cluster.py:77](../../torch_submit/commands/cluster.py#L77)
 
 List all available clusters.
+
+Retrieves the list of clusters from the config and displays them in a table format.
 
 #### Signature
 
@@ -57,9 +68,15 @@ def list_clusters(): ...
 
 ## remove_cluster
 
-[Show source in cluster.py:103](../../torch_submit/commands/cluster.py#L103)
+[Show source in cluster.py:112](../../torch_submit/commands/cluster.py#L112)
 
 Remove a cluster configuration.
+
+Prompts the user for confirmation before removing the specified cluster configuration from the config.
+
+#### Arguments
+
+- `name` *str* - The name of the cluster to remove.
 
 #### Signature
 

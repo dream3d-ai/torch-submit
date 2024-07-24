@@ -14,9 +14,13 @@
 
 ## delete_job
 
-[Show source in job.py:273](../../torch_submit/commands/job.py#L273)
+[Show source in job.py:312](../../torch_submit/commands/job.py#L312)
 
 Delete a job.
+
+#### Arguments
+
+- `job_id` *str* - Job ID or name to delete or 'all' to delete all jobs.
 
 #### Signature
 
@@ -33,7 +37,7 @@ def delete_job(
 
 ## list_jobs
 
-[Show source in job.py:171](../../torch_submit/commands/job.py#L171)
+[Show source in job.py:194](../../torch_submit/commands/job.py#L194)
 
 List all submitted jobs.
 
@@ -48,9 +52,14 @@ def list_jobs(): ...
 
 ## print_logs
 
-[Show source in job.py:148](../../torch_submit/commands/job.py#L148)
+[Show source in job.py:165](../../torch_submit/commands/job.py#L165)
 
 Tail the logs of a specific job.
+
+#### Arguments
+
+- `job_id` *str* - Job ID or name.
+- `tail` *bool* - Tail the logs.
 
 #### Signature
 
@@ -66,9 +75,13 @@ def print_logs(
 
 ## restart_job
 
-[Show source in job.py:228](../../torch_submit/commands/job.py#L228)
+[Show source in job.py:262](../../torch_submit/commands/job.py#L262)
 
 Restart a stopped job.
+
+#### Arguments
+
+- `job_id` *str* - Job ID or name.
 
 #### Signature
 
@@ -81,9 +94,13 @@ def restart_job(job_id: str = typer.Argument(..., help="Job ID or name")): ...
 
 ## stop_job
 
-[Show source in job.py:203](../../torch_submit/commands/job.py#L203)
+[Show source in job.py:228](../../torch_submit/commands/job.py#L228)
 
 Stop a running job.
+
+#### Arguments
+
+- `job_id` *str* - Job ID or name.
 
 #### Signature
 
@@ -96,9 +113,23 @@ def stop_job(job_id: str = typer.Argument(..., help="Job ID or name")): ...
 
 ## submit
 
-[Show source in job.py:27](../../torch_submit/commands/job.py#L27)
+[Show source in job.py:28](../../torch_submit/commands/job.py#L28)
 
 Submit a new job to a specified cluster.
+
+#### Arguments
+
+- `cluster` *str* - Name of the cluster to use.
+- `name` *Optional[str]* - Job name (optional, will be auto-generated if not provided).
+- `working_dir` *str* - Path to working directory.
+- `max_restarts` *int* - Maximum number of restarts for the job.
+- `num_gpus` *Optional[int]* - Number of GPUs to use per node (optional, defaults to all available).
+- `command` *List[str]* - The command to run, e.g. 'python main.py'.
+- `tail` *bool* - Tail the logs after submitting the job.
+- [Executor](../executor.md#executor) *Executor* - Executor to use.
+- `docker_image` *Optional[str]* - Docker image to use.
+- `database` *Optional[str]* - Database to use.
+- `runtime_env` *Optional[str]* - Runtime environment yaml file to use.
 
 #### Signature
 
