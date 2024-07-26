@@ -98,10 +98,10 @@ class Job:
             max_restarts=int(row[7]),
             num_gpus=int(row[8]) if row[8] else None,
             pids=pids,
-            executor=Executor(row[11]),
+            executor=Executor(row[10]),
             docker_image=row[11] or None,
-            database=Database.from_db(row[10]) if row[10] else None,
-            optuna_port=int(row[12]) if row[12] else None,
+            database=Database.from_db(row[12]) if row[12] else None,
+            optuna_port=int(row[13]) if row[13] else None,
         )
 
     def to_db(self) -> Tuple:
