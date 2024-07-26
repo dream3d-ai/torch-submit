@@ -11,6 +11,7 @@ from .types import Job, JobStatus
 
 console = Console()
 
+
 class JobManager:
     """Manages job-related operations and database interactions."""
 
@@ -42,7 +43,9 @@ class JobManager:
                 num_gpus INTEGER DEFAULT NULL,
                 pids TEXT DEFAULT NULL,
                 executor TEXT DEFAULT NULL,
-                docker_image TEXT DEFAULT NULL
+                docker_image TEXT DEFAULT NULL,
+                database TEXT DEFAULT NULL,
+                optuna_port INTEGER DEFAULT NULL
             )
         """)
 
@@ -54,8 +57,8 @@ class JobManager:
         """
         self.conn.execute(
             """
-            INSERT INTO jobs (id, name, status, working_dir, nodes, cluster, command, max_restarts, num_gpus, pids, executor, docker_image)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO jobs (id, name, status, working_dir, nodes, cluster, command, max_restarts, num_gpus, pids, executor, docker_image, database, optuna_port)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             job.to_db(),
         )

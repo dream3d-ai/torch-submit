@@ -7,6 +7,7 @@ from .config import Database, Node
 
 class Executor(str, Enum):
     """Enumeration of different types of executors."""
+
     TORCHRUN = "torchrun"
     DISTRIBUTED = "distributed"
     OPTUNA = "optuna"
@@ -14,6 +15,7 @@ class Executor(str, Enum):
 
 class JobStatus(str, Enum):
     """Enumeration of different job statuses."""
+
     SUBMITTED = "submitted"
     RUNNING = "running"
     STOPPING = "stopping"
@@ -94,7 +96,7 @@ class Job:
             cluster=row[5],
             command=row[6],
             max_restarts=int(row[7]),
-            num_gpus=int(row[8]) if row[8] else None,            
+            num_gpus=int(row[8]) if row[8] else None,
             pids=pids,
             executor=Executor(row[11]),
             docker_image=row[11] or None,
@@ -122,7 +124,7 @@ class Job:
             ",".join([f"{k}:{v}" for k, v in self.pids.items()]),
             self.executor.value,
             self.docker_image or "",
-            self.database.to_db() or "",
+            self.database.to_db() or "" if self.database else "",
             self.optuna_port or "",
         )
 
