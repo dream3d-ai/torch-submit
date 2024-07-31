@@ -27,6 +27,7 @@ def create_cluster():
     head_num_gpus = int(Prompt.ask("Enter number of GPUs on head node", default="0"))
     head_nproc = int(Prompt.ask("Enter number of processes for head node", default="1"))
     ssh_user = Prompt.ask("Enter SSH user for head node (optional)", default="")
+    ssh_port = int(Prompt.ask("Enter SSH port for head node (optional)", default="22"))
     ssh_pub_key_path = Prompt.ask(
         "Enter absolute path to SSH public key file (optional)", default=""
     )
@@ -38,6 +39,7 @@ def create_cluster():
         head_nproc,
         ssh_user,
         ssh_pub_key_path,
+        ssh_port
     )
 
     # Worker nodes
@@ -56,6 +58,7 @@ def create_cluster():
         worker_ssh_user = Prompt.ask(
             "Enter SSH user for head node (optional)", default=""
         )
+        worker_ssh_port = int(Prompt.ask("Enter SSH port for worker node (optional)", default="22"))
         worker_ssh_pub_key_path = Prompt.ask(
             "Enter absolute path to SSH public key file (optional)", default=""
         )
@@ -67,6 +70,7 @@ def create_cluster():
             worker_nproc,
             worker_ssh_user,
             worker_ssh_pub_key_path,
+            worker_ssh_port
         )
         worker_nodes.append(worker_node)
 

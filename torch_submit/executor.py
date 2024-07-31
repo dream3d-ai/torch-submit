@@ -348,7 +348,10 @@ class TorchrunExecutor(BaseExecutor):
             ip = head_node.private_ip or head_node.public_ip
             rdzv_endpoint = f"{ip}:{self.port}"
 
-        formatted_env_vars = " ".join(f"{k}={v}" for k, v in env_vars.items())
+        if env_vars:
+            formatted_env_vars = " ".join(f"{k}={v}" for k, v in env_vars.items())
+        else:
+            formatted_env_vars = ""
 
         return (
             f"OMP_NUM_THREADS={omp_num_threads} "

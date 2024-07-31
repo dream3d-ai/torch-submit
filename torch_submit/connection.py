@@ -27,7 +27,10 @@ class NodeConnection:
             }
 
         self.connection = Connection(
-            self.node.public_ip, user=self.node.ssh_user, connect_kwargs=connect_kwargs
+            self.node.public_ip,
+            user=self.node.ssh_user,
+            connect_kwargs=connect_kwargs,
+            port=self.node.ssh_port,
         )
         self.connection.open()
         return self.connection
