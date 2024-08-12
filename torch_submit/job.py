@@ -134,7 +134,7 @@ class JobManager:
                             return JobStatus.STOPPED
                         elif not result.ok:
                             exit_code_result = c.run(
-                                f"cat {self.remote_dir}/exit_code.log",
+                                f"cat {job.working_dir}/exit_code.log",
                                 warn=True,
                                 hide=True,
                             )
