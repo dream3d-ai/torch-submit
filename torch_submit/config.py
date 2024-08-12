@@ -26,6 +26,7 @@ class Node:
     nproc: int
     ssh_user: Optional[str]
     ssh_pub_key_path: Optional[str]
+    ssh_port: Optional[int]
 
     def __post_init__(self):
         """Initialize the Node object after creation."""
@@ -45,7 +46,7 @@ class Node:
         Returns:
             Node: A new Node object created from the row data.
         """
-        public_ip, private_ip, num_gpus, nproc, ssh_user, ssh_pub_key_path = row.split(
+        public_ip, private_ip, num_gpus, nproc, ssh_user, ssh_pub_key_path, ssh_port = row.split(
             ":"
         )
         return cls(
@@ -55,6 +56,7 @@ class Node:
             int(nproc),
             ssh_user if ssh_user != "None" else None,
             ssh_pub_key_path if ssh_pub_key_path != "None" else None,
+            ssh_port if ssh_port != "None" else None,
         )
 
     def to_db(self):
@@ -63,7 +65,7 @@ class Node:
         Returns:
             str: A string representation of the Node object.
         """
-        return f"{self.public_ip}:{self.private_ip or 'None'}:{self.num_gpus}:{self.nproc}:{self.ssh_user or 'None'}:{self.ssh_pub_key_path or 'None'}"
+        return f"{self.public_ip}:{self.private_ip or 'None'}:{self.num_gpus}:{self.nproc}:{self.ssh_user or 'None'}:{self.ssh_pub_key_path or 'None'}:{self.ssh_port or 'None'}"
 
     def __str__(self):
         """Return a string representation of the Node object.
@@ -281,6 +283,7 @@ class Config:
                     "nproc": cluster.head_node.nproc,
                     "ssh_user": cluster.head_node.ssh_user or None,
                     "ssh_pub_key_path": cluster.head_node.ssh_pub_key_path or None,
+                    "ssh_port": cluster.head_node.ssh_port or None,
                 },
                 "worker_nodes": [
                     {
@@ -290,6 +293,7 @@ class Config:
                         "nproc": node.nproc,
                         "ssh_user": node.ssh_user or None,
                         "ssh_pub_key_path": node.ssh_pub_key_path or None,
+                        "ssh_port": node.ssh_port or None,
                     }
                     for node in cluster.worker_nodes
                 ],
