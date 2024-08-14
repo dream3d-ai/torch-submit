@@ -23,7 +23,7 @@ dependencies = [
     "pyyaml",
     "fabric",
     "sqlalchemy",
-    "psycopg2",
+    "psycopg2-binary",
     "optuna",
     "optuna-dashboard",
 ]
