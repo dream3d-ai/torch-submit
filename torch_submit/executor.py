@@ -202,7 +202,7 @@ class BaseExecutor(ABC):
         full_command = self._prepare_command(node_rank, env_vars)
         conn.run(
             "source ~/.profile && "
-            f"{full_command} > {self.remote_dir}/output.log 2>&1 & "
+            f"USE_TORCHSUBMIT=1 {full_command} > {self.remote_dir}/output.log 2>&1 & "
             f"pid=$!; "
             f"echo $pid > {self.remote_dir}/job.pid; "
             f"wait $pid; "
