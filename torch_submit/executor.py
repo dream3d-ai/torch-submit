@@ -282,7 +282,7 @@ class DistributedExecutor(BaseExecutor):
             str: The full command to run the job with the necessary environment variables.
         """
         head_node = self.cluster.head_node
-        ip = head_node.private_ip or head_node.public_ip
+        ip = head_node.public_ip
 
         world_size = 0
         for node in self.cluster.worker_nodes + [self.cluster.head_node]:
@@ -290,12 +290,19 @@ class DistributedExecutor(BaseExecutor):
 
         formatted_env_vars = " ".join(f"{k}={v}" for k, v in env_vars.items())
 
+        worker_ip_config = (
+            f"WORKER_0_IP={self.cluster.worker_nodes[0].private_ip} "
+            if self.cluster.worker_nodes and rank < len(self.cluster.worker_nodes)
+            else ""
+        )
+
         return (
             f"MASTER_ADDR={ip} "
             f"MASTER_PORT={self.port} "
             f"WORLD_SIZE={world_size} "
             f"NODE_RANK={rank} "
-            f"LOCAL_WORLD_SIZE={self.cluster.worker_nodes[rank].num_gpus} "
+            f"LOCAL_WORLD_SIZE={self.cluster.worker_nodes[rank].num_gpus if rank < len(self.cluster.worker_nodes) else self.cluster.head_node.num_gpus} "
+            f"{worker_ip_config}"
             f"{formatted_env_vars} "
         )
 
@@ -345,7 +352,7 @@ class TorchrunExecutor(BaseExecutor):
             rdzv_endpoint = f"localhost:{self.port}"
         else:
             head_node = self.cluster.head_node
-            ip = head_node.private_ip or head_node.public_ip
+            ip = head_node.public_ip
             rdzv_endpoint = f"{ip}:{self.port}"
 
         if env_vars:
