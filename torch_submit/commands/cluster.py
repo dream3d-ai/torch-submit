@@ -5,6 +5,7 @@ from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
 from ..config import Config, Node
+from ..executor import AnsibleExecutor
 
 app = typer.Typer()
 console = Console()
@@ -119,7 +120,7 @@ def remove_cluster(name: str):
     Remove a cluster configuration.
 
     Prompts the user for confirmation before removing the specified cluster configuration from the config.
-    
+
     Args:
         name (str): The name of the cluster to remove.
     """
@@ -136,7 +137,7 @@ def edit_cluster(name: str):
     Edit an existing cluster configuration.
 
     Prompts the user for new cluster details and updates the specified cluster configuration in the config.
-    
+
     Args:
         name (str): The name of the cluster to edit.
     """
@@ -167,7 +168,7 @@ def edit_cluster(name: str):
         nproc = typer.prompt("Number of processes on worker node", default=worker.nproc, type=int)
         ssh_user = typer.prompt("SSH user for worker node (optional)", default=worker.ssh_user or "")
         ssh_pub_key_path = typer.prompt("SSH public key path for worker node (optional)", default=worker.ssh_pub_key_path or "")
-        
+
         worker_node = Node(public_ip, private_ip or None, num_gpus, nproc, ssh_user, ssh_pub_key_path)
         worker_nodes.append(worker_node)
 
@@ -177,3 +178,47 @@ def edit_cluster(name: str):
     # Update the cluster configuration
     config.update_cluster(name, head_node, worker_nodes)
     console.print(f"Cluster [bold green]{name}[/bold green] updated successfully.")
+
+
+@app.command("provision")
+def provision_cluster(
+    cluster_name: str = typer.Argument(..., help="Name of the cluster to provision"),
+    head_playbook: str = typer.Option(None, help="Path to ansible playbook for head node"),
+    worker_playbook: str = typer.Option(None, help="Path to ansible playbook for worker nodes"),
+):
+    """Provision a cluster using ansible playbooks.
+
+    Args:
+        cluster_name (str): Name of the cluster to provision.
+        head_playbook (str, optional): Path to ansible playbook for head node.
+        worker_playbook (str, optional): Path to ansible playbook for worker nodes.
+    """
+    try:
+        cluster = config.get_cluster(cluster_name)
+    except ValueError:
+        console.print(f"[bold red]Error:[/bold red] Cluster '{cluster_name}' not found.")
+        raise typer.Exit(code=1)
+
+    executor = AnsibleExecutor(cluster_name)
+
+    # Update playbook paths
+    if head_playbook:
+        cluster.head_node.ansible_playbook = head_playbook
+    if worker_playbook:
+        for node in cluster.worker_nodes:
+            node.ansible_playbook = worker_playbook
+
+    # Save updated configuration
+    config.save_config()
+
+    # Execute playbooks
+    if head_playbook:
+        console.print(f"Provisioning head node {cluster.head_node.public_ip}...")
+        executor.execute_playbook(cluster.head_node)
+
+    if worker_playbook:
+        for node in cluster.worker_nodes:
+            console.print(f"Provisioning worker node {node.public_ip}...")
+            executor.execute_playbook(node)
+
+    console.print("[bold green]Cluster provisioning completed.[/bold green]")

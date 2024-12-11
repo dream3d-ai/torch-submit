@@ -487,6 +487,31 @@ class DockerDistributedExecutor(DistributedExecutor):
         return f"{self.get_command(rank)} -- {self.job.command}"
 
 
+class AnsibleExecutor(BaseExecutor):
+    """Executes ansible playbooks across cluster nodes."""
+
+    def __init__(self, cluster_name: str):
+        self.cluster = Config().get_cluster(cluster_name)
+
+    def execute_playbook(self, node: Node):
+        if not node.ansible_playbook:
+            return
+
+        with NodeConnection(node) as conn:
+            # Copy playbook to remote
+            remote_playbook = f"/tmp/playbook_{node.public_ip}.yml"
+            conn.put(node.ansible_playbook, remote_playbook)
+
+            # Run ansible-playbook
+            try:
+                conn.run(f"ansible-playbook {remote_playbook}")
+            except Exception as e:
+                console.print(f"[bold red]Error running ansible playbook on {node.public_ip}:[/bold red] {str(e)}")
+            finally:
+                # Clean up remote playbook
+                conn.run(f"rm -f {remote_playbook}")
+
+
 class JobExecutionManager:
     @staticmethod
     def submit_job(job: Job):

@@ -18,6 +18,7 @@ class Node:
         nproc (int): The number of processes that can run on the node.
         ssh_user (Optional[str]): The SSH username for accessing the node, if available.
         ssh_pub_key_path (Optional[str]): The path to the SSH public key file, if available.
+        ansible_playbook (Optional[str]): The path to the ansible playbook for node provisioning.
     """
 
     public_ip: str
@@ -27,6 +28,7 @@ class Node:
     ssh_user: Optional[str]
     ssh_pub_key_path: Optional[str]
     ssh_port: Optional[int]
+    ansible_playbook: Optional[str]
 
     def __post_init__(self):
         """Initialize the Node object after creation."""
@@ -284,6 +286,7 @@ class Config:
                     "ssh_user": cluster.head_node.ssh_user or None,
                     "ssh_pub_key_path": cluster.head_node.ssh_pub_key_path or None,
                     "ssh_port": cluster.head_node.ssh_port or None,
+                    "ansible_playbook": cluster.head_node.ansible_playbook or None,
                 },
                 "worker_nodes": [
                     {
@@ -294,6 +297,7 @@ class Config:
                         "ssh_user": node.ssh_user or None,
                         "ssh_pub_key_path": node.ssh_pub_key_path or None,
                         "ssh_port": node.ssh_port or None,
+                        "ansible_playbook": node.ansible_playbook or None,
                     }
                     for node in cluster.worker_nodes
                 ],
