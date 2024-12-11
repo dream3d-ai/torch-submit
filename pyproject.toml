@@ -26,6 +26,7 @@ dependencies = [
     "psycopg2-binary",
     "optuna",
     "optuna-dashboard",
+    "kubernetes>=21.7.0",
 ]
 dynamic = ["version"]
 

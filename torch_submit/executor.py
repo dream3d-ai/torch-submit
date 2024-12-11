@@ -9,6 +9,7 @@ from typing import Dict, Optional
 import optuna
 from fabric import Connection
 from invoke import UnexpectedExit
+from kubernetes import client, config
 from rich.console import Console
 
 from .config import Config, Node
@@ -487,30 +488,147 @@ class DockerDistributedExecutor(DistributedExecutor):
         return f"{self.get_command(rank)} -- {self.job.command}"
 
 
-class JobExecutionManager:
-    @staticmethod
-    def submit_job(job: Job):
-        executor = job.get_executor()
-        try:
-            executor.execute()
-            console.print(
-                f"[bold green]Job {job.id} submitted successfully[/bold green]"
-            )
-        except Exception as e:
-            console.print(
-                f"[bold red]Error submitting job {job.id}:[/bold red] {str(e)}"
-            )
-            executor.cleanup()
+class K8sExecutor(BaseExecutor):
+    """
+    Executor that runs distributed jobs on Kubernetes.
 
-    @staticmethod
-    def cancel_job(job: Job):
-        executor = job.get_executor()
+    This executor extends BaseExecutor to provide Kubernetes support, allowing
+    distributed jobs to run in Kubernetes pods with proper volume mounting
+    and container configuration.
+
+    Attributes:
+        job (Job): The job to be executed.
+        k8s_config (KubernetesConfig): The Kubernetes configuration.
+        core_v1 (CoreV1Api): The Kubernetes Core V1 API client.
+    """
+
+    def __init__(self, job: Job):
+        """Initialize the K8sExecutor.
+
+        Args:
+            job (Job): The job to be executed.
+
+        Raises:
+            ValueError: If Kubernetes configuration is not set.
+        """
+        super().__init__(job)
+        self.k8s_config = Config().get_kubernetes_config()
+        if not self.k8s_config:
+            raise ValueError(
+                "Kubernetes configuration not set. Use 'torch-submit cluster kubernetes-config' first."
+            )
+        config.load_kube_config(context=self.k8s_config.context)
+        self.core_v1 = client.CoreV1Api()
+
+    def get_command(self, rank: int, env_vars: Optional[Dict[str, str]] = None) -> list:
+        """Generate environment variables for the Kubernetes pod.
+
+        Args:
+            rank (int): The rank of the current node.
+            env_vars (Optional[Dict[str, str]]): Additional environment variables.
+
+        Returns:
+            list: List of V1EnvVar objects for the pod.
+        """
+        head_node = self.cluster.head_node
+        ip = head_node.private_ip or head_node.public_ip
+
+        world_size = sum(
+            node.num_gpus
+            for node in [self.cluster.head_node] + self.cluster.worker_nodes
+        )
+
+        env = [
+            client.V1EnvVar(name="MASTER_ADDR", value=ip),
+            client.V1EnvVar(name="MASTER_PORT", value=str(self.port)),
+            client.V1EnvVar(name="WORLD_SIZE", value=str(world_size)),
+            client.V1EnvVar(name="NODE_RANK", value=str(rank)),
+            client.V1EnvVar(
+                name="LOCAL_WORLD_SIZE",
+                value=str(self.cluster.worker_nodes[rank].num_gpus),
+            ),
+        ]
+
+        if env_vars:
+            env.extend(client.V1EnvVar(name=k, value=v) for k, v in env_vars.items())
+
+        return env
+
+    def execute(self, env_vars: Optional[Dict[str, str]] = None) -> Dict[Node, int]:
+        """Execute the job by creating Kubernetes pods.
+
+        Args:
+            env_vars (Optional[Dict[str, str]]): Additional environment variables.
+
+        Returns:
+            Dict[Node, int]: Mapping of nodes to pod UIDs.
+        """
+        pods = {}
+        for rank, node in enumerate(
+            [self.cluster.head_node] + self.cluster.worker_nodes
+        ):
+            try:
+                pod = self._create_pod(rank, env_vars)
+                pods[node] = pod.metadata.uid
+            except Exception:
+                console.print_exception()
+                console.print(f"Error creating pod for rank {rank}")
+                pods[node] = None
+        return pods
+
+    def _create_pod(
+        self, rank: int, env_vars: Optional[Dict[str, str]] = None
+    ) -> client.V1Pod:
+        """Create a Kubernetes pod for the given rank.
+
+        Args:
+            rank (int): The rank of the current node.
+            env_vars (Optional[Dict[str, str]]): Additional environment variables.
+
+        Returns:
+            V1Pod: The created Kubernetes pod.
+        """
+        pod_name = f"{self.job.id}-{rank}"
+
+        volume = client.V1Volume(
+            name="workdir",
+            host_path=client.V1HostPathVolumeSource(path=self.remote_dir),
+        )
+
+        volume_mount = client.V1VolumeMount(name="workdir", mount_path=self.remote_dir)
+
+        container = client.V1Container(
+            name="torch",
+            image=self.job.docker_image,
+            command=["sh", "-c", self.job.command],
+            env=self.get_command(rank, env_vars),
+            volume_mounts=[volume_mount],
+            resources=client.V1ResourceRequirements(
+                limits={"nvidia.com/gpu": str(self.job.num_gpus)}
+            ),
+        )
+
+        pod = client.V1Pod(
+            metadata=client.V1ObjectMeta(name=pod_name, labels={"job-id": self.job.id}),
+            spec=client.V1PodSpec(
+                containers=[container], volumes=[volume], restart_policy="Never"
+            ),
+        )
+
+        return self.core_v1.create_namespaced_pod(
+            namespace=self.k8s_config.namespace, body=pod
+        )
+
+    def cleanup(self):
+        """Clean up Kubernetes resources.
+
+        This method deletes all pods associated with this job.
+        """
         try:
-            executor.cleanup()
-            console.print(
-                f"[bold green]Job {job.id} cancelled successfully[/bold green]"
+            self.core_v1.delete_collection_namespaced_pod(
+                namespace=self.k8s_config.namespace,
+                label_selector=f"job-id={self.job.id}",
             )
-        except Exception as e:
-            console.print(
-                f"[bold red]Error cancelling job {job.id}:[/bold red] {str(e)}"
-            )
+        except Exception:
+            console.print_exception()
+            console.print(f"Error cleaning up pods for job {self.job.id}")

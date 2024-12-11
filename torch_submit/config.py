@@ -1,7 +1,7 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 import yaml
 from sqlalchemy import create_engine, text
@@ -46,8 +46,8 @@ class Node:
         Returns:
             Node: A new Node object created from the row data.
         """
-        public_ip, private_ip, num_gpus, nproc, ssh_user, ssh_pub_key_path, ssh_port = row.split(
-            ":"
+        public_ip, private_ip, num_gpus, nproc, ssh_user, ssh_pub_key_path, ssh_port = (
+            row.split(":")
         )
         return cls(
             public_ip,
@@ -120,7 +120,7 @@ class DatabaseType(str, Enum):
 
     POSTGRES = "postgres"
     MYSQL = "mysql"
-    
+
     @property
     def connection_string(self):
         """Get the SQLAlchemy connection string prefix for the database type.
@@ -238,6 +238,39 @@ class Database:
         )
 
 
+@dataclass
+class KubernetesConfig:
+    """Configuration for Kubernetes cluster.
+
+    Attributes:
+        context (str): The Kubernetes context to use.
+        namespace (str): The Kubernetes namespace for resources. Defaults to "default".
+    """
+
+    context: str
+    namespace: str = "default"
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "KubernetesConfig":
+        """Create a KubernetesConfig from a dictionary.
+
+        Args:
+            data (Dict[str, Any]): Dictionary containing kubernetes configuration.
+
+        Returns:
+            KubernetesConfig: A new KubernetesConfig instance.
+        """
+        return cls(**data)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the KubernetesConfig to a dictionary.
+
+        Returns:
+            Dict[str, Any]: Dictionary representation of the config.
+        """
+        return asdict(self)
+
+
 class Config:
     """Manages the configuration for clusters and databases.
 
@@ -250,6 +283,7 @@ class Config:
         self.config_path = os.path.expanduser("~/.cache/torch-submit/config.yaml")
         self.clusters: Dict[str, Cluster] = {}
         self.databases: Dict[str, Database] = {}
+        self.kubernetes: Optional[KubernetesConfig] = None
         self.load_config()
 
     def load_config(self):
@@ -269,10 +303,13 @@ class Config:
             database = Database(**database_data)
             self.databases[database_name] = database
 
+        if "kubernetes" in config:
+            self.kubernetes = KubernetesConfig.from_dict(config["kubernetes"])
+
     def save_config(self):
         """Save the current configuration to the YAML file."""
         os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
-        config = {"clusters": {}, "databases": {}}
+        config = {"clusters": {}, "databases": {}, "kubernetes": None}
 
         for cluster_name, cluster in self.clusters.items():
             config["clusters"][cluster_name] = {
@@ -307,6 +344,8 @@ class Config:
                 "password": database.password,
                 "type": database.type.value,
             }
+        if self.kubernetes:
+            config["kubernetes"] = self.kubernetes.to_dict()
 
         with open(self.config_path, "w") as f:
             yaml.dump(config, f)
@@ -492,4 +531,27 @@ class Config:
         if name not in self.databases:
             raise ValueError(f"Database '{name}' not found in config")
         self.databases[name] = Database(address, port, username, password, type)
+        self.save_config()
+
+    # Kubernetes methods
+    def set_kubernetes_config(self, kubernetes_config: KubernetesConfig):
+        """Set the Kubernetes configuration.
+
+        Args:
+            kubernetes_config (KubernetesConfig): The Kubernetes configuration to set.
+        """
+        self.kubernetes = kubernetes_config
+        self.save_config()
+
+    def get_kubernetes_config(self) -> Optional[KubernetesConfig]:
+        """Get the current Kubernetes configuration.
+
+        Returns:
+            Optional[KubernetesConfig]: The current Kubernetes configuration, if set.
+        """
+        return self.kubernetes
+
+    def remove_kubernetes_config(self):
+        """Remove the current Kubernetes configuration."""
+        self.kubernetes = None
         self.save_config()

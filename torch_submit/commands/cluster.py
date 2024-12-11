@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
-from ..config import Config, Node
+from ..config import Config, KubernetesConfig, Node
 
 app = typer.Typer()
 console = Console()
@@ -39,7 +39,7 @@ def create_cluster():
         head_nproc,
         ssh_user,
         ssh_pub_key_path,
-        ssh_port
+        ssh_port,
     )
 
     # Worker nodes
@@ -58,7 +58,9 @@ def create_cluster():
         worker_ssh_user = Prompt.ask(
             "Enter SSH user for head node (optional)", default=""
         )
-        worker_ssh_port = int(Prompt.ask("Enter SSH port for worker node (optional)", default="22"))
+        worker_ssh_port = int(
+            Prompt.ask("Enter SSH port for worker node (optional)", default="22")
+        )
         worker_ssh_pub_key_path = Prompt.ask(
             "Enter absolute path to SSH public key file (optional)", default=""
         )
@@ -70,7 +72,7 @@ def create_cluster():
             worker_nproc,
             worker_ssh_user,
             worker_ssh_pub_key_path,
-            worker_ssh_port
+            worker_ssh_port,
         )
         worker_nodes.append(worker_node)
 
@@ -119,7 +121,7 @@ def remove_cluster(name: str):
     Remove a cluster configuration.
 
     Prompts the user for confirmation before removing the specified cluster configuration from the config.
-    
+
     Args:
         name (str): The name of the cluster to remove.
     """
@@ -136,7 +138,7 @@ def edit_cluster(name: str):
     Edit an existing cluster configuration.
 
     Prompts the user for new cluster details and updates the specified cluster configuration in the config.
-    
+
     Args:
         name (str): The name of the cluster to edit.
     """
@@ -150,25 +152,51 @@ def edit_cluster(name: str):
 
     # Edit head node
     head_node = cluster.head_node
-    head_node.public_ip = typer.prompt("Head node public IP", default=head_node.public_ip)
-    head_node.private_ip = typer.prompt("Head node private IP (optional)", default=head_node.private_ip  or "")
-    head_node.num_gpus = typer.prompt("Number of GPUs on head node", default=head_node.num_gpus, type=int)
-    head_node.nproc = typer.prompt("Number of processes on head node", default=head_node.nproc, type=int)
-    head_node.ssh_user = typer.prompt("SSH user for head node (optional)", default=head_node.ssh_user or "")
-    head_node.ssh_pub_key_path = typer.prompt("SSH public key path for head node (optional)", default=head_node.ssh_pub_key_path or "")
+    head_node.public_ip = typer.prompt(
+        "Head node public IP", default=head_node.public_ip
+    )
+    head_node.private_ip = typer.prompt(
+        "Head node private IP (optional)", default=head_node.private_ip or ""
+    )
+    head_node.num_gpus = typer.prompt(
+        "Number of GPUs on head node", default=head_node.num_gpus, type=int
+    )
+    head_node.nproc = typer.prompt(
+        "Number of processes on head node", default=head_node.nproc, type=int
+    )
+    head_node.ssh_user = typer.prompt(
+        "SSH user for head node (optional)", default=head_node.ssh_user or ""
+    )
+    head_node.ssh_pub_key_path = typer.prompt(
+        "SSH public key path for head node (optional)",
+        default=head_node.ssh_pub_key_path or "",
+    )
 
     # Edit worker nodes
     worker_nodes = []
     for i, worker in enumerate(cluster.worker_nodes):
         console.print(f"\nEditing worker node {i+1}")
         public_ip = typer.prompt("Worker node public IP", default=worker.public_ip)
-        private_ip = typer.prompt("Worker node private IP (optional)", default=worker.private_ip or "")
-        num_gpus = typer.prompt("Number of GPUs on worker node", default=worker.num_gpus, type=int)
-        nproc = typer.prompt("Number of processes on worker node", default=worker.nproc, type=int)
-        ssh_user = typer.prompt("SSH user for worker node (optional)", default=worker.ssh_user or "")
-        ssh_pub_key_path = typer.prompt("SSH public key path for worker node (optional)", default=worker.ssh_pub_key_path or "")
-        
-        worker_node = Node(public_ip, private_ip or None, num_gpus, nproc, ssh_user, ssh_pub_key_path)
+        private_ip = typer.prompt(
+            "Worker node private IP (optional)", default=worker.private_ip or ""
+        )
+        num_gpus = typer.prompt(
+            "Number of GPUs on worker node", default=worker.num_gpus, type=int
+        )
+        nproc = typer.prompt(
+            "Number of processes on worker node", default=worker.nproc, type=int
+        )
+        ssh_user = typer.prompt(
+            "SSH user for worker node (optional)", default=worker.ssh_user or ""
+        )
+        ssh_pub_key_path = typer.prompt(
+            "SSH public key path for worker node (optional)",
+            default=worker.ssh_pub_key_path or "",
+        )
+
+        worker_node = Node(
+            public_ip, private_ip or None, num_gpus, nproc, ssh_user, ssh_pub_key_path
+        )
         worker_nodes.append(worker_node)
 
         if not typer.confirm("Add another worker node?", default=False):
@@ -177,3 +205,24 @@ def edit_cluster(name: str):
     # Update the cluster configuration
     config.update_cluster(name, head_node, worker_nodes)
     console.print(f"Cluster [bold green]{name}[/bold green] updated successfully.")
+
+
+@app.command("kubernetes-config")
+def kubernetes_config(
+    context: str = typer.Option(..., help="Kubernetes context to use"),
+    namespace: str = typer.Option("default", help="Kubernetes namespace"),
+):
+    """Configure Kubernetes settings for cluster deployment."""
+    try:
+        config.set_kubernetes_config(
+            KubernetesConfig(
+                context=context,
+                namespace=namespace,
+            )
+        )
+        console.print(
+            "[bold green]Kubernetes configuration updated successfully[/bold green]"
+        )
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] {str(e)}")
+        raise typer.Exit(code=1)

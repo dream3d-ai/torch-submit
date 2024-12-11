@@ -11,6 +11,7 @@ class Executor(str, Enum):
     TORCHRUN = "torchrun"
     DISTRIBUTED = "distributed"
     OPTUNA = "optuna"
+    KUBERNETES = "kubernetes"
 
 
 class JobStatus(str, Enum):
@@ -141,11 +142,16 @@ class Job:
         from .executor import (
             DistributedExecutor,
             DockerDistributedExecutor,
+            K8sExecutor,
             OptunaExecutor,
             TorchrunExecutor,
         )
 
-        if self.executor == Executor.TORCHRUN and self.docker_image:
+        if self.executor == Executor.KUBERNETES:
+            if not self.docker_image:
+                raise ValueError("Docker image is required for kubernetes executor")
+            return K8sExecutor(self)
+        elif self.executor == Executor.TORCHRUN and self.docker_image:
             raise ValueError("Docker image is not supported for torchrun executor")
         elif self.executor == Executor.TORCHRUN:
             return TorchrunExecutor(self)
