@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import json
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Optional
 
@@ -33,19 +34,7 @@ class JobManager:
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS jobs (
                 id TEXT PRIMARY KEY,
-                name TEXT,
-                status TEXT,
-                working_dir TEXT,
-                nodes TEXT,
-                cluster TEXT,
-                command TEXT,
-                max_restarts INTEGER DEFAULT 0,
-                num_gpus INTEGER DEFAULT NULL,
-                pids TEXT DEFAULT NULL,
-                executor TEXT DEFAULT NULL,
-                docker_image TEXT DEFAULT NULL,
-                database TEXT DEFAULT NULL,
-                optuna_port INTEGER DEFAULT NULL
+                data JSON NOT NULL
             )
         """)
 
@@ -56,11 +45,8 @@ class JobManager:
             job (Job): The job to be added.
         """
         self.conn.execute(
-            """
-            INSERT INTO jobs (id, name, status, working_dir, nodes, cluster, command, max_restarts, num_gpus, pids, executor, docker_image, database, optuna_port)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-            job.to_db(),
+            "INSERT INTO jobs (id, data) VALUES (?, ?)",
+            (job.id, json.dumps(job.to_json())),
         )
         self.conn.commit()
 
@@ -73,19 +59,14 @@ class JobManager:
         Returns:
             Optional[Job]: The retrieved job, or None if not found.
         """
-        # Try to get by id first
-        cursor = self.conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id_or_name,))
+        cursor = self.conn.execute(
+            "SELECT data FROM jobs WHERE id = ? OR json_extract(data, '$.name') = ?",
+            (job_id_or_name, job_id_or_name),
+        )
         row = cursor.fetchone()
         if not row:
-            # If not found by id, try to get by name
-            cursor = self.conn.execute(
-                "SELECT * FROM jobs WHERE name = ?", (job_id_or_name,)
-            )
-            row = cursor.fetchone()
-
-        if not row:
             return None
-        return Job.from_db(row)
+        return Job.from_json(json.loads(row[0]))
 
     def list_jobs(self) -> List[Job]:
         """Retrieve all jobs from the database.
@@ -93,8 +74,8 @@ class JobManager:
         Returns:
             List[Job]: A list of all jobs.
         """
-        cursor = self.conn.execute("SELECT * FROM jobs")
-        return [Job.from_db(row) for row in cursor.fetchall()]
+        cursor = self.conn.execute("SELECT data FROM jobs")
+        return [Job.from_json(json.loads(row[0])) for row in cursor.fetchall()]
 
     def check_job_status(self, job: Job) -> str:
         """Check the current status of a job.
@@ -204,8 +185,20 @@ class JobManager:
         """
         if not isinstance(status, JobStatus):
             raise ValueError(f"Invalid job status: {status}")
+
+        # Get current job data
+        cursor = self.conn.execute("SELECT data FROM jobs WHERE id = ?", (job_id,))
+        row = cursor.fetchone()
+        if not row:
+            return
+
+        # Update status in JSON
+        job_data = json.loads(row[0])
+        job_data["status"] = status.value
+
+        # Save updated data
         self.conn.execute(
-            "UPDATE jobs SET status = ? WHERE id = ?", (status.value, job_id)
+            "UPDATE jobs SET data = ? WHERE id = ?", (json.dumps(job_data), job_id)
         )
         self.conn.commit()
 
@@ -216,12 +209,19 @@ class JobManager:
             job_id (str): The ID of the job to update.
             pids (Dict[Node, int]): A dictionary mapping nodes to process IDs.
         """
+        # Get current job data
+        cursor = self.conn.execute("SELECT data FROM jobs WHERE id = ?", (job_id,))
+        row = cursor.fetchone()
+        if not row:
+            return
+
+        # Update pids in JSON
+        job_data = json.loads(row[0])
+        job_data["pids"] = {node.public_ip: pid for node, pid in pids.items()}
+
+        # Save updated data
         self.conn.execute(
-            "UPDATE jobs SET pids = ? WHERE id = ?",
-            (
-                ",".join([f"{node.public_ip}:{pid}" for node, pid in pids.items()]),
-                job_id,
-            ),
+            "UPDATE jobs SET data = ? WHERE id = ?", (json.dumps(job_data), job_id)
         )
         self.conn.commit()
 
@@ -244,6 +244,26 @@ class JobManager:
         self.conn.close()
 
     def migrate_table(self):
-        """Perform any necessary database migrations."""
-        # Add any necessary migration steps here
-        pass
+        """Perform database migrations."""
+        try:
+            # Check if we need to migrate
+            cursor = self.conn.execute("SELECT nodes FROM jobs LIMIT 1")
+            cursor.fetchone()
+
+            # Old schema exists, migrate data
+            cursor = self.conn.execute("SELECT * FROM jobs")
+            old_jobs = [Job.from_db(row) for row in cursor.fetchall()]
+
+            # Drop old table
+            self.conn.execute("DROP TABLE jobs")
+
+            # Create new table
+            self.create_table()
+
+            # Insert migrated jobs
+            for job in old_jobs:
+                self.add_job(job)
+
+        except sqlite3.OperationalError:
+            # New schema already exists
+            pass

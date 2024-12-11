@@ -250,7 +250,10 @@ def stop_job(job_id: str = typer.Argument(..., help="Job ID or name")):
 
         if job.optuna_port:
             with NodeConnection(job.nodes[0]) as c:
-                c.run(f"pkill -TERM -f 'optuna-dashboard --port {job.optuna_port}'", warn=True)
+                c.run(
+                    f"pkill -TERM -f 'optuna-dashboard --port {job.optuna_port}'",
+                    warn=True,
+                )
 
         job_manager.update_job_status(job_id, JobStatus.STOPPING)
         console.print(f"Job [bold green]{job_id}[/bold green] is stopping")
@@ -293,7 +296,7 @@ def restart_job(job_id: str = typer.Argument(..., help="Job ID or name")):
                 result = c.run(f"pgrep -f '{script_path}'", warn=True)
                 if result.ok:
                     console.print(
-                        f"Job [bold yellow]{job_id}[/bold yellow] is already running on node {node_ip}"
+                        f"Job [bold yellow]{job_id}[/bold yellow] is already running on node {node.public_ip}"
                     )
                     raise typer.Exit(code=1)
 

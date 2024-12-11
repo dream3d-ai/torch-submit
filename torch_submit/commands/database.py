@@ -10,6 +10,7 @@ app = typer.Typer()
 console = Console()
 config = Config()
 
+
 @app.command("create")
 def create_database():
     """
@@ -21,11 +22,15 @@ def create_database():
     name = Prompt.ask("Enter database name")
 
     # Database address and port
-    type = Prompt.ask("Enter database type (mysql, postgres)", default=DatabaseType.POSTGRES.value)
+    type = Prompt.ask(
+        "Enter database type (mysql, postgres)", default=DatabaseType.POSTGRES.value
+    )
     address = Prompt.ask("Enter database address")
     port = int(Prompt.ask("Enter database port", default="5432"))
     username = Prompt.ask("Enter database username")
-    password = Prompt.ask("Enter database password (optional)", password=True, default="")
+    password = Prompt.ask(
+        "Enter database password (optional)", password=True, default=""
+    )
 
     config.add_db(type, name, address, port, username, password)
     console.print(f"Database [bold green]{name}[/bold green] created successfully.")
@@ -68,7 +73,7 @@ def remove_database(name: str):
     Remove a database configuration.
 
     Prompts the user for confirmation before removing the specified database configuration from the config.
-    
+
     Args:
         name (str): The name of the database to remove.
     """
@@ -85,7 +90,7 @@ def edit_database(name: str):
     Edit an existing database configuration.
 
     Prompts the user for new database details and updates the specified database configuration in the config.
-    
+
     Args:
         name (str): The name of the database to edit.
     """
@@ -98,11 +103,15 @@ def edit_database(name: str):
     console.print(f"Editing database: [bold green]{name}[/bold green]")
 
     # Edit database address and port
-    type = Prompt.ask("Enter database type (mysql, postgres)", default=database.type.value)
+    type = Prompt.ask(
+        "Enter database type (mysql, postgres)", default=database.type.value
+    )
     address = Prompt.ask("Enter database address", default=database.address)
     port = Prompt.ask("Enter database port", default=database.port)
     username = Prompt.ask("Enter database username", default=database.username)
-    password = Prompt.ask("Enter database password (optional)", password=True, default=database.password)
+    password = Prompt.ask(
+        "Enter database password (optional)", password=True, default=database.password
+    )
 
     # Update the database configuration
     config.update_db(type, name, address, port, username, password)

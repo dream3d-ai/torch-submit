@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from .config import Database, Node
 
@@ -68,65 +68,50 @@ class Job:
             raise ValueError("Optuna executor requires a port")
 
     @classmethod
-    def from_db(cls, row: Tuple) -> "Job":
-        """
-        Create a Job instance from a database row.
-
-        Args:
-            row (Tuple): A tuple representing a row from the database.
-
-        Returns:
-            Job: A Job instance created from the database row.
-        """
-        nodes = [Node.from_db(node) for node in row[4].split(",")]
+    def from_json(cls, data: dict) -> "Job":
+        """Create Job from JSON dictionary."""
+        nodes = [Node.from_json(n) for n in data["nodes"]]
         pids = {}
-        if row[9]:
-            for pair in row[9].split(","):
-                node_ip, pid = pair.split(":")
-                node = next((n for n in nodes if n.public_ip == node_ip), None)
-                if node:
-                    pids[node] = int(pid)
-
+        for node_ip, pid in data["pids"].items():
+            node = next((n for n in nodes if n.public_ip == node_ip), None)
+            if node:
+                pids[node] = pid
+        database = Database.from_json(data["database"]) if data["database"] else None
         return cls(
-            id=row[0],
-            name=row[1],
-            status=JobStatus(row[2]),
-            working_dir=row[3],
+            id=data["id"],
+            name=data["name"],
+            status=JobStatus(data["status"]),
+            working_dir=data["working_dir"],
             nodes=nodes,
-            cluster=row[5],
-            command=row[6],
-            max_restarts=int(row[7]),
-            num_gpus=int(row[8]) if row[8] else None,
+            cluster=data["cluster"],
+            command=data["command"],
+            max_restarts=data["max_restarts"],
+            num_gpus=data["num_gpus"],
             pids=pids,
-            executor=Executor(row[10]),
-            docker_image=row[11] or None,
-            database=Database.from_db(row[12]) if row[12] else None,
-            optuna_port=int(row[13]) if row[13] else None,
+            executor=Executor(data["executor"]),
+            docker_image=data["docker_image"],
+            database=database,
+            optuna_port=data["optuna_port"],
         )
 
-    def to_db(self) -> Tuple:
-        """
-        Convert the Job instance to a tuple for database storage.
-
-        Returns:
-            Tuple: A tuple representing the Job instance for database storage.
-        """
-        return (
-            self.id,
-            self.name,
-            self.status.value,
-            self.working_dir,
-            ",".join([node.to_db() for node in self.nodes]),
-            self.cluster,
-            self.command,
-            self.max_restarts,
-            self.num_gpus or "",
-            ",".join([f"{k}:{v}" for k, v in self.pids.items()]),
-            self.executor.value,
-            self.docker_image or "",
-            self.database.to_db() or "" if self.database else "",
-            self.optuna_port or "",
-        )
+    def to_json(self) -> dict:
+        """Convert Job to JSON-serializable dictionary."""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "status": self.status.value,
+            "working_dir": self.working_dir,
+            "nodes": [node.to_json() for node in self.nodes],
+            "cluster": self.cluster,
+            "command": self.command,
+            "max_restarts": self.max_restarts,
+            "num_gpus": self.num_gpus,
+            "pids": {node.public_ip: pid for node, pid in self.pids.items()},
+            "executor": self.executor.value,
+            "docker_image": self.docker_image,
+            "database": self.database.to_json() if self.database else None,
+            "optuna_port": self.optuna_port,
+        }
 
     def get_executor(self):
         """

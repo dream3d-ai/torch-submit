@@ -37,35 +37,21 @@ class Node:
         self.nproc = int(self.nproc)
 
     @classmethod
-    def from_db(cls, row: str):
-        """Create a Node object from a database row string.
+    def from_json(cls, data: dict) -> "Node":
+        """Create Node from JSON dictionary."""
+        return cls(**data)
 
-        Args:
-            row (str): A string representation of the node data.
-
-        Returns:
-            Node: A new Node object created from the row data.
-        """
-        public_ip, private_ip, num_gpus, nproc, ssh_user, ssh_pub_key_path, ssh_port = row.split(
-            ":"
-        )
-        return cls(
-            public_ip,
-            private_ip if private_ip != "None" else None,
-            int(num_gpus),
-            int(nproc),
-            ssh_user if ssh_user != "None" else None,
-            ssh_pub_key_path if ssh_pub_key_path != "None" else None,
-            ssh_port if ssh_port != "None" else None,
-        )
-
-    def to_db(self):
-        """Convert the Node object to a string representation for database storage.
-
-        Returns:
-            str: A string representation of the Node object.
-        """
-        return f"{self.public_ip}:{self.private_ip or 'None'}:{self.num_gpus}:{self.nproc}:{self.ssh_user or 'None'}:{self.ssh_pub_key_path or 'None'}:{self.ssh_port or 'None'}"
+    def to_json(self) -> dict:
+        """Convert Node to JSON-serializable dictionary."""
+        return {
+            "public_ip": self.public_ip,
+            "private_ip": self.private_ip,
+            "num_gpus": self.num_gpus,
+            "nproc": self.nproc,
+            "ssh_user": self.ssh_user,
+            "ssh_pub_key_path": self.ssh_pub_key_path,
+            "ssh_port": self.ssh_port,
+        }
 
     def __str__(self):
         """Return a string representation of the Node object.
@@ -120,7 +106,7 @@ class DatabaseType(str, Enum):
 
     POSTGRES = "postgres"
     MYSQL = "mysql"
-    
+
     @property
     def connection_string(self):
         """Get the SQLAlchemy connection string prefix for the database type.
@@ -163,23 +149,9 @@ class Database:
         self.type = DatabaseType(self.type)
 
     @classmethod
-    def from_db(cls, row: str):
-        """Create a Database object from a database row string.
-
-        Args:
-            row (str): A string representation of the database data.
-
-        Returns:
-            Database: A new Database object created from the row data.
-        """
-        address, port, username, password, type = row.split(":")
-        return cls(
-            address,
-            int(port),
-            username,
-            password or None,
-            DatabaseType(type),
-        )
+    def from_json(cls, data: dict) -> "Database":
+        """Create Database from JSON dictionary."""
+        return cls(**data)
 
     @property
     def uri(self):
@@ -190,13 +162,15 @@ class Database:
         """
         return f"{self.type.connection_string}://{self.username}:{self.password}@{self.address}:{self.port}/torch_submit"
 
-    def to_db(self):
-        """Convert the Database object to a string representation for database storage.
-
-        Returns:
-            str: A string representation of the Database object.
-        """
-        return f"{self.address}:{self.port}:{self.username}:{self.password or ''}:{self.type.value}"
+    def to_json(self) -> dict:
+        """Convert Database to JSON-serializable dictionary."""
+        return {
+            "address": self.address,
+            "port": self.port,
+            "username": self.username,
+            "password": self.password,
+            "type": self.type.value,
+        }
 
     def __str__(self):
         """Return a string representation of the Database object.
