@@ -31,6 +31,9 @@ def create_cluster():
     ssh_pub_key_path = Prompt.ask(
         "Enter absolute path to SSH public key file (optional)", default=""
     )
+    virtualenv_path = Prompt.ask(
+        "Enter absolute path to virtualenv (optional)", default=""
+    )
 
     head_node = Node(
         head_public_ip,
@@ -39,7 +42,8 @@ def create_cluster():
         head_nproc,
         ssh_user,
         ssh_pub_key_path,
-        ssh_port
+        ssh_port,
+        virtualenv_path
     )
 
     # Worker nodes
@@ -62,6 +66,9 @@ def create_cluster():
         worker_ssh_pub_key_path = Prompt.ask(
             "Enter absolute path to SSH public key file (optional)", default=""
         )
+        worker_virtualenv_path = Prompt.ask(
+            "Enter absolute path to virtualenv (optional)", default=""
+        )
 
         worker_node = Node(
             worker_public_ip,
@@ -70,7 +77,8 @@ def create_cluster():
             worker_nproc,
             worker_ssh_user,
             worker_ssh_pub_key_path,
-            worker_ssh_port
+            worker_ssh_port,
+            worker_virtualenv_path
         )
         worker_nodes.append(worker_node)
 
@@ -119,7 +127,7 @@ def remove_cluster(name: str):
     Remove a cluster configuration.
 
     Prompts the user for confirmation before removing the specified cluster configuration from the config.
-    
+
     Args:
         name (str): The name of the cluster to remove.
     """
@@ -136,7 +144,7 @@ def edit_cluster(name: str):
     Edit an existing cluster configuration.
 
     Prompts the user for new cluster details and updates the specified cluster configuration in the config.
-    
+
     Args:
         name (str): The name of the cluster to edit.
     """
@@ -156,6 +164,7 @@ def edit_cluster(name: str):
     head_node.nproc = typer.prompt("Number of processes on head node", default=head_node.nproc, type=int)
     head_node.ssh_user = typer.prompt("SSH user for head node (optional)", default=head_node.ssh_user or "")
     head_node.ssh_pub_key_path = typer.prompt("SSH public key path for head node (optional)", default=head_node.ssh_pub_key_path or "")
+    head_node.virtualenv_path = typer.prompt("Virtualenv path for head node (optional)", default=head_node.virtualenv_path or "")
 
     # Edit worker nodes
     worker_nodes = []
@@ -167,8 +176,9 @@ def edit_cluster(name: str):
         nproc = typer.prompt("Number of processes on worker node", default=worker.nproc, type=int)
         ssh_user = typer.prompt("SSH user for worker node (optional)", default=worker.ssh_user or "")
         ssh_pub_key_path = typer.prompt("SSH public key path for worker node (optional)", default=worker.ssh_pub_key_path or "")
-        
-        worker_node = Node(public_ip, private_ip or None, num_gpus, nproc, ssh_user, ssh_pub_key_path)
+        virtualenv_path = typer.prompt("Virtualenv path for worker node (optional)", default=worker.virtualenv_path or "")
+
+        worker_node = Node(public_ip, private_ip or None, num_gpus, nproc, ssh_user, ssh_pub_key_path, worker.ssh_port, virtualenv_path)
         worker_nodes.append(worker_node)
 
         if not typer.confirm("Add another worker node?", default=False):
