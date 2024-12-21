@@ -155,9 +155,7 @@ class BaseExecutor(ABC):
             Dict[Node, int]: A dictionary mapping nodes to their process IDs.
         """
         pids = {}
-        for rank, node in enumerate(
-            [self.cluster.head_node] + self.cluster.worker_nodes
-        ):
+        for rank, node in enumerate([self.cluster.head_node] + self.cluster.worker_nodes):
             try:
                 with NodeConnection(node) as conn:
                     self._setup_remote_env(conn)
@@ -219,14 +217,10 @@ class BaseExecutor(ABC):
 
     def _copy_working_dir(self, conn: Connection):
         remote_zip_path = f"{self.remote_dir}/working_dir.zip"
-        console.print(
-            f"[bold blue]Copying working directory to {conn.host}...[/bold blue]"
-        )
+        console.print(f"[bold blue]Copying working directory to {conn.host}...[/bold blue]")
         conn.put(self.job.working_dir, remote_zip_path)
 
-        console.print(
-            f"[bold blue]Unzipping working directory on {conn.host}...[/bold blue]"
-        )
+        console.print(f"[bold blue]Unzipping working directory on {conn.host}...[/bold blue]")
         conn.run(f"unzip -q -o {remote_zip_path} -d {self.remote_dir}")
         console.print("[bold green]Working directory successfully synced.[/bold green]")
 
@@ -337,16 +331,14 @@ class TorchrunExecutor(BaseExecutor):
                 nproc_per_node = self.cluster.worker_nodes[rank - 1].num_gpus
             else:
                 nproc_per_node = 1  # Default to 1 if no GPU information is available
-            omp_num_threads = (
-                self.cluster.worker_nodes[rank - 1].nproc // nproc_per_node
-            )
+            omp_num_threads = self.cluster.worker_nodes[rank - 1].nproc // nproc_per_node
 
-        if len(self.cluster.worker_nodes) == 0:
-            rdzv_endpoint = f"localhost:{self.port}"
-        else:
-            head_node = self.cluster.head_node
-            ip = head_node.private_ip or head_node.public_ip
-            rdzv_endpoint = f"{ip}:{self.port}"
+        # if len(self.cluster.worker_nodes) == 0:
+        #     rdzv_endpoint = f"localhost:{self.port}"
+        # else:
+        head_node = self.cluster.head_node
+        master_ip = head_node.private_ip or head_node.public_ip
+        master_port = self.port
 
         if env_vars:
             formatted_env_vars = " ".join(f"{k}={v}" for k, v in env_vars.items())
@@ -360,8 +352,8 @@ class TorchrunExecutor(BaseExecutor):
             f"--nnodes={nnodes} "
             f"--node_rank={rank} "
             f"--nproc-per-node={nproc_per_node} "
-            f"--rdzv-backend=c10d "
-            f"--rdzv-endpoint={rdzv_endpoint} "
+            f"--master_addr={master_ip} "
+            f"--master_port={master_port} "
             f"--rdzv-id={self.job.id} "
             f"--max-restarts={self.job.max_restarts} "
             "--no-python"
@@ -493,13 +485,9 @@ class JobExecutionManager:
         executor = job.get_executor()
         try:
             executor.execute()
-            console.print(
-                f"[bold green]Job {job.id} submitted successfully[/bold green]"
-            )
+            console.print(f"[bold green]Job {job.id} submitted successfully[/bold green]")
         except Exception as e:
-            console.print(
-                f"[bold red]Error submitting job {job.id}:[/bold red] {str(e)}"
-            )
+            console.print(f"[bold red]Error submitting job {job.id}:[/bold red] {str(e)}")
             executor.cleanup()
 
     @staticmethod
@@ -507,10 +495,6 @@ class JobExecutionManager:
         executor = job.get_executor()
         try:
             executor.cleanup()
-            console.print(
-                f"[bold green]Job {job.id} cancelled successfully[/bold green]"
-            )
+            console.print(f"[bold green]Job {job.id} cancelled successfully[/bold green]")
         except Exception as e:
-            console.print(
-                f"[bold red]Error cancelling job {job.id}:[/bold red] {str(e)}"
-            )
+            console.print(f"[bold red]Error cancelling job {job.id}:[/bold red] {str(e)}")
